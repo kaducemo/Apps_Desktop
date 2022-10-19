@@ -4,17 +4,14 @@ notar que esta é uma classe auxiliar para fazer a lista encadeada'''
 from elemento import Produto
 
 class Elo:
-    # def __init__(self):
-    #     '''
-    #     Construtor Padrao - Não Inicializa nenhum atributo da classe        
-    #     '''
-    #     self.Produto = None
-    #     self.EloAnterior = None
-    #     self.EloPosterior = None
-    #     print('Elo construído, mas sem inicializações!')
-
-
-
+    '''
+        Atributos:
+        : Produdo
+        : EloAnterior
+        : EloPosterior
+        : Indice
+    '''
+    
     def __init__(self, _prod:Produto = None, _eloA:"Elo" = None, _eloP:"Elo" = None)->None:
         '''
         Construtor da Classe
@@ -25,6 +22,11 @@ class Elo:
         self.Produto = _prod
         self.EloAnterior = _eloA
         self.EloPosterior = _eloP
+        
+        # if(_prod != None):
+
+
+        
         print('Elo construído com as inicializações dos atributos!')
 
 ##############################################################################################
@@ -56,7 +58,7 @@ class Elo:
 
 ##############################################################################################
 
-    def GetEloAnterior(self):
+    def GetEloAnterior(self) -> "Elo":
         '''
         Retorna o Elo anterior da lista encadeada
         : returns Elo
@@ -73,7 +75,7 @@ class Elo:
         self.EloPosterior = _eloP
 
 ##############################################################################################
-    def GetEloPosterior(self):
+    def GetEloPosterior(self) -> "Elo":
         '''
         Retorna o Elo Posterior deste elo na lista encadeada
         : returns Elo
@@ -81,3 +83,19 @@ class Elo:
         return self.EloPosterior
         
 ##############################################################################################
+def __SetIndice(self):
+        '''
+        Método privado. Seta o índice deste ELO na lista encadeada
+        '''
+        if (self.EloAnterior == None):
+            self.Indice = 0
+        else:
+            indAnterior = self.EloAnterior.GetIndice()
+        self.Indice = indAnterior+1
+##############################################################################################
+def GetIndice(self) -> int:
+    '''
+    Retorna o índice do Elo dentro da lista encadeada
+    '''
+    
+    return self.Indice
