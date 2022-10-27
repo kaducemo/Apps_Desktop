@@ -1,3 +1,3 @@
-/home/kadu/Estudos/Cpp/Projeto1/build/CMakeFiles/Projeto.dir
-/home/kadu/Estudos/Cpp/Projeto1/build/CMakeFiles/edit_cache.dir
-/home/kadu/Estudos/Cpp/Projeto1/build/CMakeFiles/rebuild_cache.dir
+/home/kadu/Documentos/Estudos/Apps_Desktop/Cpp/Projeto1/build/CMakeFiles/rebuild_cache.dir
+/home/kadu/Documentos/Estudos/Apps_Desktop/Cpp/Projeto1/build/CMakeFiles/edit_cache.dir
+/home/kadu/Documentos/Estudos/Apps_Desktop/Cpp/Projeto1/build/CMakeFiles/Projeto.dir
