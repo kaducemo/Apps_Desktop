@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''Este módulo implementa uma classe, a qual possui um elemento interno. É importante
 notar que esta é uma classe auxiliar para fazer a lista encadeada'''
 
@@ -23,11 +24,12 @@ class Elo:
         self.EloAnterior = _eloA
         self.EloPosterior = _eloP
         
-        # if(_prod != None):
-
-
+        if(_prod == None):
+            self.Indice = 1
+        else:
+            self.
         
-        print('Elo construído com as inicializações dos atributos!')
+        print('Elo construído com as inicializações de atributos!')
 
 ##############################################################################################
 
@@ -99,3 +101,18 @@ def GetIndice(self) -> int:
     '''
     
     return self.Indice
+
+##############################################################################################
+
+def AdicionaElo(self, novoElo:"Elo") -> bool:
+    '''
+    Adiciona um elo na lista encadeada
+    '''
+    
+    return True
+
+##############################################################################################
+
+@staticmethod
+def RetornaUltimoElo(self) -> "Elo":
+    return

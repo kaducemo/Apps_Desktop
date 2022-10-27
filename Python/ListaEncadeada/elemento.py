@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''Este arquivo implementa o elemento que é na verdade a própria informação que se
 se deseja guardar.'''
 
