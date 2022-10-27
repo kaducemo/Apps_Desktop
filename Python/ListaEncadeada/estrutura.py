@@ -9,31 +9,26 @@ class Elo:
         Atributos:
         : Produdo
         : EloAnterior
-        : EloPosterior
-        : Indice
+        : EloPosterior        
     '''
-    
-    def __init__(self, _prod:Produto = None, _eloA:"Elo" = None, _eloP:"Elo" = None)->None:
+      
+    def __init__(self, _prod:Produto = None, _eloA:"Elo" = None, _eloP:"Elo" = None, _ind:int = 0)->None:
         '''
         Construtor da Classe
         : param _prod: Produto apontado por esse elo da Lista encadeada
         : param _eloA: Elo Anterior da lista encadeada
         : param _eloP: Elo Posterior da Lista encadeada
         '''
-        self.Produto = _prod
-        self.EloAnterior = _eloA
-        self.EloPosterior = _eloP
-        
-        if(_prod == None):
-            self.Indice = 1
-        else:
-            self.
-        
-        print('Elo construído com as inicializações de atributos!')
+
+        self.SetProdutoDoElo(_prod)
+        self.SetEloAnteriorDoElo(_eloA)
+        self.SetEloPosteriorDoElo(_eloP)
+        self.SetIndiceDoElo(_ind)                 
+        print('Elo construído!')
 
 ##############################################################################################
 
-    def SetProduto(self,_prod:Produto):
+    def SetProdutoDoElo(self,_prod:Produto)->None:
         '''
         Seta o Produto apontado por este elo da Lista
         : param_prod: Produto apontado por esse elo da Lista encadeada       
@@ -42,7 +37,7 @@ class Elo:
 
 ##############################################################################################
 
-    def GetProduto(self)->Produto:
+    def GetProdutoDoElo(self)->Produto:
         '''
         Retorna o produto apontado por esta classe
         : returns Produto
@@ -51,7 +46,7 @@ class Elo:
     
 ##############################################################################################
     
-    def SetEloAnterior(self, _eloA):
+    def SetEloAnteriorDoElo(self, _eloA)->None:
         '''
         Seta o Elo anterior da lista encadeada
         : param _eloA: É o elo que queremos associar ao elo presente.                
@@ -60,7 +55,7 @@ class Elo:
 
 ##############################################################################################
 
-    def GetEloAnterior(self) -> "Elo":
+    def GetEloAnteriorDoElo(self) -> "Elo":
         '''
         Retorna o Elo anterior da lista encadeada
         : returns Elo
@@ -69,7 +64,7 @@ class Elo:
 
 ##############################################################################################
    
-    def SetEloPosterior(self, _eloP):
+    def SetEloPosteriorDoElo(self, _eloP)->None:
         '''
         Seta o elo posterior da lista encadeada
         : param _eloP - Novo valor do Elo Posterior da lista encadeada
@@ -77,7 +72,7 @@ class Elo:
         self.EloPosterior = _eloP
 
 ##############################################################################################
-    def GetEloPosterior(self) -> "Elo":
+    def GetEloPosteriorDoElo(self) -> "Elo":
         '''
         Retorna o Elo Posterior deste elo na lista encadeada
         : returns Elo
@@ -85,34 +80,16 @@ class Elo:
         return self.EloPosterior
         
 ##############################################################################################
-def __SetIndice(self):
+def SetIndiceDoElo(self, ind:int)->None:
         '''
-        Método privado. Seta o índice deste ELO na lista encadeada
+        Seta o índice deste ELO na lista encadeada
         '''
-        if (self.EloAnterior == None):
-            self.Indice = 0
-        else:
-            indAnterior = self.EloAnterior.GetIndice()
-        self.Indice = indAnterior+1
+        
+        self.Indice = ind
 ##############################################################################################
-def GetIndice(self) -> int:
+def GetIndiceDoElo(self) -> int:
     '''
     Retorna o índice do Elo dentro da lista encadeada
-    '''
-    
+    '''    
     return self.Indice
 
-##############################################################################################
-
-def AdicionaElo(self, novoElo:"Elo") -> bool:
-    '''
-    Adiciona um elo na lista encadeada
-    '''
-    
-    return True
-
-##############################################################################################
-
-@staticmethod
-def RetornaUltimoElo(self) -> "Elo":
-    return
