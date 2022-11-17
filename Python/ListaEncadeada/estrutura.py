@@ -7,9 +7,10 @@ from elemento import Produto
 class Elo:
     '''
         Atributos:
-        : Produdo
+        : Produto
         : EloAnterior
         : EloPosterior        
+        : Indice
     '''
       
     def __init__(self, _prod:Produto = None, _eloA:"Elo" = None, _eloP:"Elo" = None, _ind:int = 0)->None:
@@ -18,6 +19,7 @@ class Elo:
         : param _prod: Produto apontado por esse elo da Lista encadeada
         : param _eloA: Elo Anterior da lista encadeada
         : param _eloP: Elo Posterior da Lista encadeada
+        : param _ind: Indice do Elo
         '''
 
         self.SetProdutoDoElo(_prod)
@@ -80,16 +82,16 @@ class Elo:
         return self.EloPosterior
         
 ##############################################################################################
-def SetIndiceDoElo(self, ind:int)->None:
+    def SetIndiceDoElo(self, ind:int)->None:
         '''
         Seta o índice deste ELO na lista encadeada
         '''
         
         self.Indice = ind
 ##############################################################################################
-def GetIndiceDoElo(self) -> int:
-    '''
-    Retorna o índice do Elo dentro da lista encadeada
-    '''    
-    return self.Indice
+    def GetIndiceDoElo(self) -> int:
+        '''
+        Retorna o índice do Elo dentro da lista encadeada
+        '''    
+        return self.Indice
 
