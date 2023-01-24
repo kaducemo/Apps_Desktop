@@ -1,0 +1,8 @@
+﻿  UdpClient.cpp
+C:\Users\carlos.oliveira\Desktop\GIT_Desktop\Apps_Desktop\Cpp\UDP\Client\UdpClient\UdpClient.cpp(10,1): warning C4326: tipo de retorno de 'main' deve ser 'int' em vez de 'void'
+C:\Users\carlos.oliveira\Desktop\GIT_Desktop\Apps_Desktop\Cpp\UDP\Client\UdpClient\UdpClient.cpp(49,94): warning C4267: 'argumento': conversão de 'size_t' para 'int', possível perda de dados
+  Gerando código
+  Previous IPDB not found, fall back to full compilation.
+  All 83 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finalizada a geração de código
+  UdpClient.vcxproj -> C:\Users\carlos.oliveira\Desktop\GIT_Desktop\Apps_Desktop\Cpp\UDP\Client\UdpClient\x64\Release\UdpClient.exe

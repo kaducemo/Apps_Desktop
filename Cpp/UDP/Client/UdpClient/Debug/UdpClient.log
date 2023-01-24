@@ -1,0 +1,3 @@
+﻿  UdpClient.cpp
+C:\Users\carlos.oliveira\Desktop\GIT_Desktop\Apps_Desktop\Cpp\UDP\Client\UdpClient\UdpClient.cpp(10,1): warning C4326: tipo de retorno de 'main' deve ser 'int' em vez de 'void'
+  UdpClient.vcxproj -> C:\Users\carlos.oliveira\Desktop\GIT_Desktop\Apps_Desktop\Cpp\UDP\Client\UdpClient\Debug\UdpClient.exe

@@ -1,6 +1,3 @@
-// UdpServer.cpp : Este arquivo contém a função 'main'. A execução do programa começa e termina ali.
-//
-
 #include <iostream>
 #include<ws2tcpip.h>
 
@@ -10,10 +7,9 @@ using namespace std;
 
 void main()
 {
-    std::cout << "Initializing the UDP Server!\n";
+    std::cout << "Initializing the UDP Server...\n";
 
-    // 1) Initialize the Winsockets library
-    
+    // 1) Initialize the Winsockets library    
     WSADATA wsData;
 
     WORD ver = MAKEWORD(2, 2);
@@ -43,9 +39,9 @@ void main()
     ZeroMemory(&client, clientLength);
     
 
-    char buf[1024]; //RX buffer
-    
+    std::cout << "Waiting for messages to echo...\n";
 
+    char buf[1024]; //RX buffer
 
     // 4) Receive the clients messages and reply them
     while (true)
@@ -62,11 +58,9 @@ void main()
         ZeroMemory(clientIp, 256);
 
         inet_ntop(AF_INET, &client.sin_addr, clientIp, 256);
-        cout << "Message recev from " << clientIp << " : " << buf << endl;
-
+        cout << "Message received from " << clientIp << " : " << buf << endl;
+        sendto(in, buf, bytesIn, 0, (sockaddr*)&client, clientLength);
     }
-
-
 
     // 5) Close the server
     closesocket(in);
@@ -76,6 +70,3 @@ void main()
 
     return;
 }
-
-// Executar programa: Ctrl + F5 ou Menu Depurar > Iniciar Sem Depuração
-// Depurar programa: F5 ou menu Depurar > Iniciar Depuração
