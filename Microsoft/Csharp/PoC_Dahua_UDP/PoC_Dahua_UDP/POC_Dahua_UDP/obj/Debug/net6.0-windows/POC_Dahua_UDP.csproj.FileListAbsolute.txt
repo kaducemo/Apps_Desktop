@@ -1,0 +1,17 @@
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\POC_Dahua_UDP\bin\Debug\net6.0-windows\POC_Dahua_UDP.exe
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\POC_Dahua_UDP\bin\Debug\net6.0-windows\POC_Dahua_UDP.deps.json
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\POC_Dahua_UDP\bin\Debug\net6.0-windows\POC_Dahua_UDP.runtimeconfig.json
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\POC_Dahua_UDP\bin\Debug\net6.0-windows\POC_Dahua_UDP.dll
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\POC_Dahua_UDP\bin\Debug\net6.0-windows\POC_Dahua_UDP.pdb
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\POC_Dahua_UDP\obj\Debug\net6.0-windows\POC_Dahua_UDP.csproj.AssemblyReference.cache
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\POC_Dahua_UDP\obj\Debug\net6.0-windows\POC_Dahua_UDP.Form1.resources
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\POC_Dahua_UDP\obj\Debug\net6.0-windows\POC_Dahua_UDP.csproj.GenerateResource.cache
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\POC_Dahua_UDP\obj\Debug\net6.0-windows\POC_Dahua_UDP.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\POC_Dahua_UDP\obj\Debug\net6.0-windows\POC_Dahua_UDP.AssemblyInfoInputs.cache
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\POC_Dahua_UDP\obj\Debug\net6.0-windows\POC_Dahua_UDP.AssemblyInfo.cs
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\POC_Dahua_UDP\obj\Debug\net6.0-windows\POC_Dahua_UDP.csproj.CoreCompileInputs.cache
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\POC_Dahua_UDP\obj\Debug\net6.0-windows\POC_Dahua_UDP.dll
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\POC_Dahua_UDP\obj\Debug\net6.0-windows\refint\POC_Dahua_UDP.dll
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\POC_Dahua_UDP\obj\Debug\net6.0-windows\POC_Dahua_UDP.pdb
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\POC_Dahua_UDP\obj\Debug\net6.0-windows\POC_Dahua_UDP.genruntimeconfig.cache
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\POC_Dahua_UDP\obj\Debug\net6.0-windows\ref\POC_Dahua_UDP.dll

@@ -1,0 +1,17 @@
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\UDP_Server_Test\bin\Debug\net6.0-windows\UDP_Server_Test.exe
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\UDP_Server_Test\bin\Debug\net6.0-windows\UDP_Server_Test.deps.json
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\UDP_Server_Test\bin\Debug\net6.0-windows\UDP_Server_Test.runtimeconfig.json
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\UDP_Server_Test\bin\Debug\net6.0-windows\UDP_Server_Test.dll
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\UDP_Server_Test\bin\Debug\net6.0-windows\UDP_Server_Test.pdb
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\UDP_Server_Test\obj\Debug\net6.0-windows\UDP_Server_Test.csproj.AssemblyReference.cache
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\UDP_Server_Test\obj\Debug\net6.0-windows\UDP_Server_Test.Form1.resources
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\UDP_Server_Test\obj\Debug\net6.0-windows\UDP_Server_Test.csproj.GenerateResource.cache
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\UDP_Server_Test\obj\Debug\net6.0-windows\UDP_Server_Test.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\UDP_Server_Test\obj\Debug\net6.0-windows\UDP_Server_Test.AssemblyInfoInputs.cache
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\UDP_Server_Test\obj\Debug\net6.0-windows\UDP_Server_Test.AssemblyInfo.cs
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\UDP_Server_Test\obj\Debug\net6.0-windows\UDP_Server_Test.csproj.CoreCompileInputs.cache
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\UDP_Server_Test\obj\Debug\net6.0-windows\UDP_Server_Test.dll
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\UDP_Server_Test\obj\Debug\net6.0-windows\refint\UDP_Server_Test.dll
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\UDP_Server_Test\obj\Debug\net6.0-windows\UDP_Server_Test.pdb
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\UDP_Server_Test\obj\Debug\net6.0-windows\UDP_Server_Test.genruntimeconfig.cache
+C:\Users\carlos.oliveira\Desktop\PoC_Dahua_UDP\UDP_Server_Test\obj\Debug\net6.0-windows\ref\UDP_Server_Test.dll
