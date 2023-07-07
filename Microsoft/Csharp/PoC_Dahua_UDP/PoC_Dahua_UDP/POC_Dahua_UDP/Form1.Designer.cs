@@ -79,6 +79,16 @@
             label3 = new Label();
             tbPortUDP1 = new TextBox();
             portUDP1 = new Label();
+            tbQtL4C1 = new TextBox();
+            tbQtL3C1 = new TextBox();
+            tbQtL2C1 = new TextBox();
+            tbQtL1C1 = new TextBox();
+            label1 = new Label();
+            tbQtL4C2 = new TextBox();
+            tbQtL3C2 = new TextBox();
+            tbQtL2C2 = new TextBox();
+            tbQtL1C2 = new TextBox();
+            label19 = new Label();
             groupBox1.SuspendLayout();
             groupBox3.SuspendLayout();
             groupBox2.SuspendLayout();
@@ -100,7 +110,7 @@
             groupBox1.Controls.Add(portUDP1);
             groupBox1.Location = new Point(12, 12);
             groupBox1.Name = "groupBox1";
-            groupBox1.Size = new Size(537, 476);
+            groupBox1.Size = new Size(537, 561);
             groupBox1.TabIndex = 0;
             groupBox1.TabStop = false;
             groupBox1.Text = "Conexão";
@@ -143,6 +153,11 @@
             // 
             // groupBox3
             // 
+            groupBox3.Controls.Add(tbQtL4C2);
+            groupBox3.Controls.Add(tbQtL3C2);
+            groupBox3.Controls.Add(tbQtL2C2);
+            groupBox3.Controls.Add(tbQtL1C2);
+            groupBox3.Controls.Add(label19);
             groupBox3.Controls.Add(tbOcL4C2);
             groupBox3.Controls.Add(tbOcL3C2);
             groupBox3.Controls.Add(tbOcL2C2);
@@ -162,9 +177,9 @@
             groupBox3.Controls.Add(cbL2C2);
             groupBox3.Controls.Add(cbL1C2);
             groupBox3.Controls.Add(label16);
-            groupBox3.Location = new Point(10, 285);
+            groupBox3.Location = new Point(10, 342);
             groupBox3.Name = "groupBox3";
-            groupBox3.Size = new Size(521, 180);
+            groupBox3.Size = new Size(521, 213);
             groupBox3.TabIndex = 17;
             groupBox3.TabStop = false;
             groupBox3.Text = "Câmera 2";
@@ -350,6 +365,11 @@
             // 
             // groupBox2
             // 
+            groupBox2.Controls.Add(tbQtL4C1);
+            groupBox2.Controls.Add(tbQtL3C1);
+            groupBox2.Controls.Add(tbQtL2C1);
+            groupBox2.Controls.Add(tbQtL1C1);
+            groupBox2.Controls.Add(label1);
             groupBox2.Controls.Add(tbOcL4C1);
             groupBox2.Controls.Add(tbOcL3C1);
             groupBox2.Controls.Add(tbOcL2C1);
@@ -371,7 +391,7 @@
             groupBox2.Controls.Add(label2);
             groupBox2.Location = new Point(10, 99);
             groupBox2.Name = "groupBox2";
-            groupBox2.Size = new Size(521, 180);
+            groupBox2.Size = new Size(521, 223);
             groupBox2.TabIndex = 16;
             groupBox2.TabStop = false;
             groupBox2.Text = "Câmera 1";
@@ -611,11 +631,101 @@
             portUDP1.TabIndex = 6;
             portUDP1.Text = "Porta Câmera 1: ";
             // 
+            // tbQtL4C1
+            // 
+            tbQtL4C1.Enabled = false;
+            tbQtL4C1.Location = new Point(422, 185);
+            tbQtL4C1.Name = "tbQtL4C1";
+            tbQtL4C1.Size = new Size(49, 23);
+            tbQtL4C1.TabIndex = 37;
+            tbQtL4C1.TextAlign = HorizontalAlignment.Center;
+            // 
+            // tbQtL3C1
+            // 
+            tbQtL3C1.Enabled = false;
+            tbQtL3C1.Location = new Point(343, 185);
+            tbQtL3C1.Name = "tbQtL3C1";
+            tbQtL3C1.Size = new Size(49, 23);
+            tbQtL3C1.TabIndex = 36;
+            tbQtL3C1.TextAlign = HorizontalAlignment.Center;
+            // 
+            // tbQtL2C1
+            // 
+            tbQtL2C1.Enabled = false;
+            tbQtL2C1.Location = new Point(269, 185);
+            tbQtL2C1.Name = "tbQtL2C1";
+            tbQtL2C1.Size = new Size(49, 23);
+            tbQtL2C1.TabIndex = 35;
+            tbQtL2C1.TextAlign = HorizontalAlignment.Center;
+            // 
+            // tbQtL1C1
+            // 
+            tbQtL1C1.Enabled = false;
+            tbQtL1C1.Location = new Point(199, 185);
+            tbQtL1C1.Name = "tbQtL1C1";
+            tbQtL1C1.Size = new Size(49, 23);
+            tbQtL1C1.TabIndex = 34;
+            tbQtL1C1.TextAlign = HorizontalAlignment.Center;
+            // 
+            // label1
+            // 
+            label1.AutoSize = true;
+            label1.Location = new Point(6, 188);
+            label1.Name = "label1";
+            label1.Size = new Size(119, 15);
+            label1.TabIndex = 33;
+            label1.Text = "Qtde. Acionamentos:";
+            // 
+            // tbQtL4C2
+            // 
+            tbQtL4C2.Enabled = false;
+            tbQtL4C2.Location = new Point(422, 181);
+            tbQtL4C2.Name = "tbQtL4C2";
+            tbQtL4C2.Size = new Size(49, 23);
+            tbQtL4C2.TabIndex = 42;
+            tbQtL4C2.TextAlign = HorizontalAlignment.Center;
+            // 
+            // tbQtL3C2
+            // 
+            tbQtL3C2.Enabled = false;
+            tbQtL3C2.Location = new Point(343, 181);
+            tbQtL3C2.Name = "tbQtL3C2";
+            tbQtL3C2.Size = new Size(49, 23);
+            tbQtL3C2.TabIndex = 41;
+            tbQtL3C2.TextAlign = HorizontalAlignment.Center;
+            // 
+            // tbQtL2C2
+            // 
+            tbQtL2C2.Enabled = false;
+            tbQtL2C2.Location = new Point(269, 181);
+            tbQtL2C2.Name = "tbQtL2C2";
+            tbQtL2C2.Size = new Size(49, 23);
+            tbQtL2C2.TabIndex = 40;
+            tbQtL2C2.TextAlign = HorizontalAlignment.Center;
+            // 
+            // tbQtL1C2
+            // 
+            tbQtL1C2.Enabled = false;
+            tbQtL1C2.Location = new Point(199, 181);
+            tbQtL1C2.Name = "tbQtL1C2";
+            tbQtL1C2.Size = new Size(49, 23);
+            tbQtL1C2.TabIndex = 39;
+            tbQtL1C2.TextAlign = HorizontalAlignment.Center;
+            // 
+            // label19
+            // 
+            label19.AutoSize = true;
+            label19.Location = new Point(6, 184);
+            label19.Name = "label19";
+            label19.Size = new Size(119, 15);
+            label19.TabIndex = 38;
+            label19.Text = "Qtde. Acionamentos:";
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(562, 496);
+            ClientSize = new Size(562, 585);
             Controls.Add(groupBox1);
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MaximizeBox = false;
@@ -685,5 +795,15 @@
         private Label label18;
         private TextBox tbPacoteC1;
         private Label label17;
+        private TextBox tbQtL4C2;
+        private TextBox tbQtL3C2;
+        private TextBox tbQtL2C2;
+        private TextBox tbQtL1C2;
+        private Label label19;
+        private TextBox tbQtL4C1;
+        private TextBox tbQtL3C1;
+        private TextBox tbQtL2C1;
+        private TextBox tbQtL1C1;
+        private Label label1;
     }
 }

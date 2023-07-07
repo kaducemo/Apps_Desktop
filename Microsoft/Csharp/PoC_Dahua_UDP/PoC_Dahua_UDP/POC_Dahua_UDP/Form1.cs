@@ -22,6 +22,9 @@ namespace POC_Dahua_UDP
         UInt64 indicePacoteCam1 = 0;
         UInt64 indicePacoteCam2 = 0;
 
+        UInt32[] contaAcionamentosC1 = { 0 , 0, 0 , 0 };
+        UInt32[] contaAcionamentosC2 = { 0, 0, 0, 0 };
+
 
         Thread threadIniciaCaptura1 = null;
         Thread threadIniciaCaptura2 = null;
@@ -72,6 +75,8 @@ namespace POC_Dahua_UDP
             Action<TextBox, String> pModificaTextBoxContagem = ModificaUmaTextBox;
             object[] param4 = new object[2]; //Parametros utilizado para Modificar Textbox Contagem
 
+            Action<TextBox[], String[]> pModificaTextBoxNoAcionamento = ModificaTextBox;
+            object[] param5 = new object[2]; //Parametros utilizado para Modificar Textbox
 
 
 
@@ -79,7 +84,6 @@ namespace POC_Dahua_UDP
             {
                 if (camNumber == 1) //CAM1
                 {
-
 
                     CheckBox[] cbTemp = { cbL1C1, cbL2C1, cbL3C1, cbL4C1 };
                     bool[] boolTemp = { false, false, false, false };
@@ -90,6 +94,9 @@ namespace POC_Dahua_UDP
                     TextBox[] tbTemp2 = { tbOcL1C1, tbOcL2C1, tbOcL3C1, tbOcL4C1 };
                     string[] strTemp2 = { "", "", "", "" };
 
+                    TextBox[] tbTemp3 = { tbQtL1C1, tbQtL2C1, tbQtL3C1, tbQtL4C1 };
+                    string[] strTemp3 = { "", "", "", "" };
+
                     long[] TempoAcionamento = { 0, 0, 0, 0 };
                     Stopwatch[] cronometrosCamera = new Stopwatch[4];
                     cronometrosCamera[0] = new Stopwatch();
@@ -98,6 +105,7 @@ namespace POC_Dahua_UDP
                     cronometrosCamera[3] = new Stopwatch();
 
                     bool[] permissaoParadaContagem = { false, false, false, false };
+                    bool[] AcionamentoNotificado = { false, false, false, false };
                     UInt16 bufferOcupacaoL1 = 0, bufferOcupacaoL2 = 0, bufferOcupacaoL3 = 0, bufferOcupacaoL4 = 0;
 
 
@@ -123,16 +131,24 @@ namespace POC_Dahua_UDP
                                 cronometrosCamera[0].Stop();
                                 TempoAcionamento[0] = cronometrosCamera[0].ElapsedMilliseconds;
                                 strTemp1[0] = TempoAcionamento[0].ToString();
-                            }
+                            }                            
                             else
                             {
                                 cronometrosCamera[0].Restart();
                                 permissaoParadaContagem[0] = false;
                             }
+                            if (!AcionamentoNotificado[0])
+                            {
+                                AcionamentoNotificado[0] = true;
+                                contaAcionamentosC1[0]++;                                
+                            }
                         }
-                        else if (!boolTemp[0] && cronometrosCamera[0].IsRunning)
+                        else 
                         {
-                            permissaoParadaContagem[0] = true;
+                            AcionamentoNotificado[0] = false;
+                            if(cronometrosCamera[0].IsRunning)
+                                permissaoParadaContagem[0] = true;
+
                         }
 
 
@@ -154,10 +170,18 @@ namespace POC_Dahua_UDP
                                 cronometrosCamera[1].Restart();
                                 permissaoParadaContagem[1] = false;
                             }
+                            if (!AcionamentoNotificado[1])
+                            {
+                                AcionamentoNotificado[1] = true;
+                                contaAcionamentosC1[1]++;
+                            }
                         }
-                        else if (!boolTemp[1] && cronometrosCamera[1].IsRunning)
+                        else
                         {
-                            permissaoParadaContagem[1] = true;
+                            AcionamentoNotificado[1] = false;
+                            if (cronometrosCamera[1].IsRunning)
+                                permissaoParadaContagem[1] = true;
+
                         }
 
                         aux = temp & 0x04;
@@ -178,10 +202,18 @@ namespace POC_Dahua_UDP
                                 cronometrosCamera[2].Restart();
                                 permissaoParadaContagem[2] = false;
                             }
+                            if (!AcionamentoNotificado[2])
+                            {
+                                AcionamentoNotificado[2] = true;
+                                contaAcionamentosC1[2]++;
+                            }
                         }
-                        else if (!boolTemp[2] && cronometrosCamera[2].IsRunning)
+                        else
                         {
-                            permissaoParadaContagem[2] = true;
+                            AcionamentoNotificado[2] = false;
+                            if (cronometrosCamera[2].IsRunning)
+                                permissaoParadaContagem[2] = true;
+
                         }
 
                         aux = temp & 0x08;
@@ -202,10 +234,18 @@ namespace POC_Dahua_UDP
                                 cronometrosCamera[3].Restart();
                                 permissaoParadaContagem[3] = false;
                             }
+                            if (!AcionamentoNotificado[3])
+                            {
+                                AcionamentoNotificado[3] = true;
+                                contaAcionamentosC1[3]++;
+                            }
                         }
-                        else if (!boolTemp[3] && cronometrosCamera[3].IsRunning)
+                        else
                         {
-                            permissaoParadaContagem[3] = true;
+                            AcionamentoNotificado[3] = false;
+                            if (cronometrosCamera[3].IsRunning)
+                                permissaoParadaContagem[3] = true;
+
                         }
 
 
@@ -225,13 +265,20 @@ namespace POC_Dahua_UDP
                         strTemp2[1] = Convert.ToString((100 * bufferOcupacaoL2) / 65535);
                         strTemp2[2] = Convert.ToString((100 * bufferOcupacaoL3) / 65535);
                         strTemp2[3] = Convert.ToString((100 * bufferOcupacaoL4) / 65535);
-
                         BeginInvoke(pModificaTextBoxOcupacao, param3); //Atualiza TextBox Ocupação
-
 
                         param4[0] = tbPacoteC1;
                         param4[1] = indicePacoteCam1.ToString();
                         BeginInvoke(pModificaTextBoxContagem, param4); //Atualiza TextBox Contagem
+
+                        param5[0] = tbTemp3;
+                        param5[1] = strTemp3;
+                        strTemp3[0] = contaAcionamentosC1[0].ToString(); //Define a Taxa de ocupação e coloca em uma string
+                        strTemp3[1] = contaAcionamentosC1[1].ToString();
+                        strTemp3[2] = contaAcionamentosC1[2].ToString();
+                        strTemp3[3] = contaAcionamentosC1[3].ToString();
+                        BeginInvoke(pModificaTextBoxNoAcionamento, param5); //Atualiza TextBox Ocupação
+
                     }
 
                 }
@@ -246,6 +293,9 @@ namespace POC_Dahua_UDP
                     TextBox[] tbTemp2 = { tbOcL1C2, tbOcL2C2, tbOcL3C2, tbOcL4C2 };
                     string[] strTemp2 = { "", "", "", "" };
 
+                    TextBox[] tbTemp3 = { tbQtL1C2, tbQtL2C2, tbQtL3C2, tbQtL4C2 };
+                    string[] strTemp3 = { "", "", "", "" };
+
                     long[] TempoAcionamento = { 0, 0, 0, 0 };
                     Stopwatch[] cronometrosCamera = new Stopwatch[4];
                     cronometrosCamera[0] = new Stopwatch();
@@ -254,6 +304,7 @@ namespace POC_Dahua_UDP
                     cronometrosCamera[3] = new Stopwatch();
 
                     bool[] permissaoParadaContagem = { false, false, false, false };
+                    bool[] AcionamentoNotificado = { false, false, false, false };
                     UInt16 bufferOcupacaoL1 = 0, bufferOcupacaoL2 = 0, bufferOcupacaoL3 = 0, bufferOcupacaoL4 = 0;
 
 
@@ -284,10 +335,18 @@ namespace POC_Dahua_UDP
                                 cronometrosCamera[0].Restart();
                                 permissaoParadaContagem[0] = false;
                             }
+                            if (!AcionamentoNotificado[0])
+                            {
+                                AcionamentoNotificado[0] = true;
+                                contaAcionamentosC2[0]++;
+                            }
                         }
-                        else if (!boolTemp[0] && cronometrosCamera[0].IsRunning)
+                        else
                         {
-                            permissaoParadaContagem[0] = true;
+                            AcionamentoNotificado[0] = false;
+                            if (cronometrosCamera[0].IsRunning)
+                                permissaoParadaContagem[0] = true;
+
                         }
 
 
@@ -309,10 +368,18 @@ namespace POC_Dahua_UDP
                                 cronometrosCamera[1].Restart();
                                 permissaoParadaContagem[1] = false;
                             }
+                            if (!AcionamentoNotificado[1])
+                            {
+                                AcionamentoNotificado[1] = true;
+                                contaAcionamentosC2[1]++;
+                            }
                         }
-                        else if (!boolTemp[1] && cronometrosCamera[1].IsRunning)
+                        else
                         {
-                            permissaoParadaContagem[1] = true;
+                            AcionamentoNotificado[1] = false;
+                            if (cronometrosCamera[1].IsRunning)
+                                permissaoParadaContagem[1] = true;
+
                         }
 
                         aux = temp & 0x04;
@@ -333,10 +400,18 @@ namespace POC_Dahua_UDP
                                 cronometrosCamera[2].Restart();
                                 permissaoParadaContagem[2] = false;
                             }
+                            if (!AcionamentoNotificado[2])
+                            {
+                                AcionamentoNotificado[2] = true;
+                                contaAcionamentosC2[2]++;
+                            }
                         }
-                        else if (!boolTemp[2] && cronometrosCamera[2].IsRunning)
+                        else
                         {
-                            permissaoParadaContagem[2] = true;
+                            AcionamentoNotificado[3] = false;
+                            if (cronometrosCamera[3].IsRunning)
+                                permissaoParadaContagem[3] = true;
+
                         }
 
                         aux = temp & 0x08;
@@ -357,10 +432,18 @@ namespace POC_Dahua_UDP
                                 cronometrosCamera[3].Restart();
                                 permissaoParadaContagem[3] = false;
                             }
+                            if (!AcionamentoNotificado[3])
+                            {
+                                AcionamentoNotificado[3] = true;
+                                contaAcionamentosC2[3]++;
+                            }
                         }
-                        else if (!boolTemp[3] && cronometrosCamera[3].IsRunning)
+                        else
                         {
-                            permissaoParadaContagem[3] = true;
+                            AcionamentoNotificado[3] = false;
+                            if (cronometrosCamera[3].IsRunning)
+                                permissaoParadaContagem[3] = true;
+
                         }
 
                         param1[0] = cbTemp;
@@ -385,12 +468,20 @@ namespace POC_Dahua_UDP
                         param4[1] = indicePacoteCam2.ToString();
                         BeginInvoke(pModificaTextBoxContagem, param4); //Atualiza TextBox Contagem
 
+                        param5[0] = tbTemp3;
+                        param5[1] = strTemp3;
+                        strTemp3[0] = contaAcionamentosC2[0].ToString(); //Define a Taxa de ocupação e coloca em uma string
+                        strTemp3[1] = contaAcionamentosC2[1].ToString();
+                        strTemp3[2] = contaAcionamentosC2[2].ToString();
+                        strTemp3[3] = contaAcionamentosC2[3].ToString();
+                        BeginInvoke(pModificaTextBoxNoAcionamento, param5); //Atualiza TextBox Ocupação
+
                     }
 
                 }
 
             }
-            catch (SocketException e)
+            catch
             { }
             finally
             {
@@ -413,6 +504,10 @@ namespace POC_Dahua_UDP
                 TaxaOcupacaoC1[1] = 0;
                 TaxaOcupacaoC1[2] = 0;
                 TaxaOcupacaoC1[3] = 0;
+                contaAcionamentosC1[0] = 0;
+                contaAcionamentosC1[1] = 0;
+                contaAcionamentosC1[2] = 0;
+                contaAcionamentosC1[3] = 0;
             }
             else
             {
@@ -421,6 +516,10 @@ namespace POC_Dahua_UDP
                 TaxaOcupacaoC2[1] = 0;
                 TaxaOcupacaoC2[2] = 0;
                 TaxaOcupacaoC2[3] = 0;
+                contaAcionamentosC2[0] = 0;
+                contaAcionamentosC2[1] = 0;
+                contaAcionamentosC2[2] = 0;
+                contaAcionamentosC2[3] = 0;
             }
 
         }
