@@ -1,0 +1,10 @@
+C:\Local\SOFTWARE\TestesPessoais\TesteECDH\ConsoleECDH_B163\bin\Debug\ConsoleECDH_B163.exe.config
+C:\Local\SOFTWARE\TestesPessoais\TesteECDH\ConsoleECDH_B163\bin\Debug\ConsoleECDH_B163.exe
+C:\Local\SOFTWARE\TestesPessoais\TesteECDH\ConsoleECDH_B163\bin\Debug\ConsoleECDH_B163.pdb
+C:\Local\SOFTWARE\TestesPessoais\TesteECDH\ConsoleECDH_B163\bin\Debug\BouncyCastle.Cryptography.dll
+C:\Local\SOFTWARE\TestesPessoais\TesteECDH\ConsoleECDH_B163\bin\Debug\BouncyCastle.Cryptography.xml
+C:\Local\SOFTWARE\TestesPessoais\TesteECDH\ConsoleECDH_B163\obj\Debug\ConsoleECDH_B163.csproj.AssemblyReference.cache
+C:\Local\SOFTWARE\TestesPessoais\TesteECDH\ConsoleECDH_B163\obj\Debug\ConsoleECDH_B163.csproj.CoreCompileInputs.cache
+C:\Local\SOFTWARE\TestesPessoais\TesteECDH\ConsoleECDH_B163\obj\Debug\ConsoleE.14A9E6AD.Up2Date
+C:\Local\SOFTWARE\TestesPessoais\TesteECDH\ConsoleECDH_B163\obj\Debug\ConsoleECDH_B163.exe
+C:\Local\SOFTWARE\TestesPessoais\TesteECDH\ConsoleECDH_B163\obj\Debug\ConsoleECDH_B163.pdb
