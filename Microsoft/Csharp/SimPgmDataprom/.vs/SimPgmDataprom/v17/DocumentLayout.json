@@ -1,0 +1,83 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Local\\SOFTWARE\\GIT\\Apps_Desktop\\Microsoft\\Csharp\\SimPgmDataprom\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{80C21FB7-CAC2-4E3D-88E6-E2846F99EAC4}|SimPgmDataprom.csproj|c:\\local\\software\\git\\apps_desktop\\microsoft\\csharp\\simpgmdataprom\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{80C21FB7-CAC2-4E3D-88E6-E2846F99EAC4}|SimPgmDataprom.csproj|solutionrelative:form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{80C21FB7-CAC2-4E3D-88E6-E2846F99EAC4}|SimPgmDataprom.csproj|C:\\Local\\SOFTWARE\\GIT\\Apps_Desktop\\Microsoft\\Csharp\\SimPgmDataprom\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{80C21FB7-CAC2-4E3D-88E6-E2846F99EAC4}|SimPgmDataprom.csproj|solutionrelative:form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{80C21FB7-CAC2-4E3D-88E6-E2846F99EAC4}|SimPgmDataprom.csproj|C:\\Local\\SOFTWARE\\GIT\\Apps_Desktop\\Microsoft\\Csharp\\SimPgmDataprom\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{80C21FB7-CAC2-4E3D-88E6-E2846F99EAC4}|SimPgmDataprom.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BDDD0C19-0E67-4FDF-871C-F551C6B81B9A}|..\\ConsoleECDH_P256_SERIAL\\ConsoleECDH_P256_Serial.csproj|c:\\local\\software\\git\\apps_desktop\\microsoft\\csharp\\consoleecdh_p256_serial\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 277,
+          "SelectedChildIndex": 2,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Local\\SOFTWARE\\GIT\\Apps_Desktop\\Microsoft\\Csharp\\ConsoleECDH_P256_SERIAL\\Program.cs",
+              "RelativeDocumentMoniker": "..\\ConsoleECDH_P256_SERIAL\\Program.cs",
+              "ToolTip": "C:\\Local\\SOFTWARE\\GIT\\Apps_Desktop\\Microsoft\\Csharp\\ConsoleECDH_P256_SERIAL\\Program.cs",
+              "RelativeToolTip": "..\\ConsoleECDH_P256_SERIAL\\Program.cs",
+              "ViewState": "AQIAABUAAAAAAAAAAAAAADsAAAAXAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-13T19:01:20.87Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Local\\SOFTWARE\\GIT\\Apps_Desktop\\Microsoft\\Csharp\\SimPgmDataprom\\Program.cs",
+              "RelativeDocumentMoniker": "Program.cs",
+              "ToolTip": "C:\\Local\\SOFTWARE\\GIT\\Apps_Desktop\\Microsoft\\Csharp\\SimPgmDataprom\\Program.cs",
+              "RelativeToolTip": "Program.cs",
+              "ViewState": "AQIAAAcAAAAAAAAAAADwvyUAAAAJAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-13T15:13:00.009Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Form1.cs",
+              "DocumentMoniker": "C:\\Local\\SOFTWARE\\GIT\\Apps_Desktop\\Microsoft\\Csharp\\SimPgmDataprom\\Form1.cs",
+              "RelativeDocumentMoniker": "Form1.cs",
+              "ToolTip": "C:\\Local\\SOFTWARE\\GIT\\Apps_Desktop\\Microsoft\\Csharp\\SimPgmDataprom\\Form1.cs",
+              "RelativeToolTip": "Form1.cs",
+              "ViewState": "AQIAAG8AAAAAAAAAAAAiwKYAAABFAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-05T17:52:25.96Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Form1.cs [Design]",
+              "DocumentMoniker": "C:\\Local\\SOFTWARE\\GIT\\Apps_Desktop\\Microsoft\\Csharp\\SimPgmDataprom\\Form1.cs",
+              "RelativeDocumentMoniker": "Form1.cs",
+              "ToolTip": "C:\\Local\\SOFTWARE\\GIT\\Apps_Desktop\\Microsoft\\Csharp\\SimPgmDataprom\\Form1.cs [Design]",
+              "RelativeToolTip": "Form1.cs [Design]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-05T17:45:47.959Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

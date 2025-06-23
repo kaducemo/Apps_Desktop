@@ -1,0 +1,13 @@
+C:\Local\SOFTWARE\GIT\Apps_Desktop\Microsoft\Csharp\SimPgmDataprom\bin\Debug\SimPgmDataprom.exe.config
+C:\Local\SOFTWARE\GIT\Apps_Desktop\Microsoft\Csharp\SimPgmDataprom\bin\Debug\SimPgmDataprom.exe
+C:\Local\SOFTWARE\GIT\Apps_Desktop\Microsoft\Csharp\SimPgmDataprom\bin\Debug\SimPgmDataprom.pdb
+C:\Local\SOFTWARE\GIT\Apps_Desktop\Microsoft\Csharp\SimPgmDataprom\obj\Debug\SimPgmDataprom.csproj.AssemblyReference.cache
+C:\Local\SOFTWARE\GIT\Apps_Desktop\Microsoft\Csharp\SimPgmDataprom\obj\Debug\SimPgmDataprom.Form1.resources
+C:\Local\SOFTWARE\GIT\Apps_Desktop\Microsoft\Csharp\SimPgmDataprom\obj\Debug\SimPgmDataprom.Properties.Resources.resources
+C:\Local\SOFTWARE\GIT\Apps_Desktop\Microsoft\Csharp\SimPgmDataprom\obj\Debug\SimPgmDataprom.csproj.GenerateResource.cache
+C:\Local\SOFTWARE\GIT\Apps_Desktop\Microsoft\Csharp\SimPgmDataprom\obj\Debug\SimPgmDataprom.csproj.CoreCompileInputs.cache
+C:\Local\SOFTWARE\GIT\Apps_Desktop\Microsoft\Csharp\SimPgmDataprom\obj\Debug\SimPgmDataprom.exe
+C:\Local\SOFTWARE\GIT\Apps_Desktop\Microsoft\Csharp\SimPgmDataprom\obj\Debug\SimPgmDataprom.pdb
+C:\Local\SOFTWARE\GIT\Apps_Desktop\Microsoft\Csharp\SimPgmDataprom\bin\Debug\BouncyCastle.Cryptography.dll
+C:\Local\SOFTWARE\GIT\Apps_Desktop\Microsoft\Csharp\SimPgmDataprom\bin\Debug\BouncyCastle.Cryptography.xml
+C:\Local\SOFTWARE\GIT\Apps_Desktop\Microsoft\Csharp\SimPgmDataprom\obj\Debug\SimPgmDa.488AACE3.Up2Date
