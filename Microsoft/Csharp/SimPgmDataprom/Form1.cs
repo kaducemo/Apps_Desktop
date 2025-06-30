@@ -43,11 +43,7 @@ namespace SimPgmDataprom
         bool chavePublicaRemotaRecebida = false;
         byte[] salt = Encoding.ASCII.GetBytes("DATAPROM");
         byte[] info = Encoding.ASCII.GetBytes("SECRETCOMM");
-        //string info = "SECRETCOMM";
-
-
-
-
+        
         public Form1()
         {
             InitializeComponent();
@@ -66,14 +62,13 @@ namespace SimPgmDataprom
 
         private void btConectar_Click(object sender, EventArgs e)
         {
-            
             if (maquinaEstados == ME.None || maquinaEstados == ME.Desconectado)
             {
                 chavePublicaRemotaRecebida = false;
                 comboBox1.Enabled = false;
-                tsslStatus.Text = "Conectando...";
+                tsslStatus.Text = "Enviando PBK...";
                 btConectar.Text = "Desconectar";
-                maquinaEstados = ME.Conectado;
+                maquinaEstados = ME.Envia_PBK_Local;
                 serialPort1.PortName = comboBox1.SelectedItem.ToString();
                 serialPort1.Open();
 
@@ -84,7 +79,18 @@ namespace SimPgmDataprom
                 //Envia chave publica local pela SERIAL
                 byte[] publicKeyBytes = alicePublicKey.Q.GetEncoded(false); // false para descompactada
                 byte[] privateKeyBytes = alicePrivateKey.D.ToByteArray(); // false para descompactada
-                serialPort1.Write(publicKeyBytes, 0, publicKeyBytes.Length);
+
+                int tam1 = 0;
+                byte[] dadosEmpacotados = EmpacotaDadosProtocolo(publicKeyBytes, out tam1);
+                                
+                byte[] dadosEmpacotadoscomHeader = new byte[dadosEmpacotados.Length + 2];
+
+                dadosEmpacotadoscomHeader[0] = 0x02; // início
+                Array.Copy(dadosEmpacotados, 0, dadosEmpacotadoscomHeader, 1, dadosEmpacotados.Length);
+                dadosEmpacotadoscomHeader[dadosEmpacotadoscomHeader.Length - 1] = 0x03; // final
+
+                serialPort1.Write(dadosEmpacotadoscomHeader, 0, dadosEmpacotadoscomHeader.Length);
+                maquinaEstados = ME.Recebe_PBK_Remota;                
 
                 BeginInvoke(new Action(() => { tbChaveLocalPriv.Text = BitConverter.ToString(privateKeyBytes).Replace("-", " "); })); // Atualizar o TextBox na thread principal
                 BeginInvoke(new Action(() => { tbChaveLocalPub.Text = BitConverter.ToString(publicKeyBytes).Replace("-", " "); })); // Atualizar o TextBox na thread principal
@@ -117,66 +123,119 @@ namespace SimPgmDataprom
             comboBox1.Items.Clear();
             comboBox1.Items.AddRange(ports);
         }
-        
+
+        private List<byte> buffer = new List<byte>();
+        private const int MaxFrameSize = 4096; // 4KB
         private void serialPort1_DataReceived(object sender, SerialDataReceivedEventArgs e)
-        {   
-            if(chavePublicaRemotaRecebida == false)
+        {
+            SerialPort sp = (SerialPort)sender;
+            int bytesToRead = sp.BytesToRead;
+            byte[] tempBuffer = new byte[bytesToRead];
+            sp.Read(tempBuffer, 0, bytesToRead);
+
+            // Armazena os bytes recebidos no buffer contínuo
+            buffer.AddRange(tempBuffer);
+
+            while (true)
             {
-                if (serialPort1.BytesToRead >= 65)
+                int startIdx = buffer.IndexOf(0x02); // Início do quadro
+                int endIdx = buffer.IndexOf(0x03, startIdx + 1); // Fim do quadro (busca após o SOF)
+
+                // Verifica se um quadro completo foi encontrado
+                if (startIdx != -1 && endIdx != -1 && endIdx > startIdx)
                 {
+                    int length = endIdx - startIdx + 1;
+                    byte[] frame = buffer.GetRange(startIdx, length).ToArray();
+
+                    if (length > MaxFrameSize) //Se o comprimento excedeu limite, deve haver um erro no quadro
+                    {
+                        Console.WriteLine($"Quadro excedeu o tamanho máximo de {MaxFrameSize} bytes. Descartando...");
+                        buffer.RemoveRange(0, endIdx + 1);
+                        continue;
+                    }
+
+                    // Processa o quadro completo (incluindo os marcadores)
+                    ProcessFrame(frame);
+
+                    // Remove os dados já processados do buffer
+                    buffer.RemoveRange(0, endIdx + 1);
+                }
+                else
+                {
+                    // Se não há quadro completo, aguarda mais dados
+                    break;
+                }
+            }            
+        }
+
+        private void ProcessFrame(byte[] dadosRecebidos)
+        /*Processa um frame recebido*/
+        {
+            if (maquinaEstados == ME.Recebe_PBK_Remota)
+            {                
                     chavePublicaRemotaRecebida = true;
-                    byte[] dadosRecebidos = new byte[65];
-                    serialPort1.Read(dadosRecebidos, 0, 65);
+                    
+
+                    //Retira header
+                    byte[] dadosRecebidosSemHeader = new byte[dadosRecebidos.Length - 2];
+                    Array.Copy(dadosRecebidos, 1, dadosRecebidosSemHeader, 0, dadosRecebidosSemHeader.Length);
+
+                    int tamPacote = 0;
+                    var chavePublicaRem = DesempacotaDadosProtocolo(dadosRecebidosSemHeader, out tamPacote);
 
                     var curve = ECNamedCurveTable.GetByName("secp256r1");
                     var domainParams = new ECDomainParameters(curve.Curve, curve.G, curve.N, curve.H);
-                    var point = curve.Curve.DecodePoint(dadosRecebidos);
+                    var point = curve.Curve.DecodePoint(chavePublicaRem);
                     chavePublicaControlador = new ECPublicKeyParameters(point, domainParams);
                     SegredoCompartilhado = null;
                     SegredoCompartilhado = GenerateSharedSecret(parChavesProgramador.Private as ECPrivateKeyParameters, chavePublicaControlador);
 
-                    string hexString = BitConverter.ToString(dadosRecebidos).Replace("-", " "); // Converter para HEX                
-                    BeginInvoke(new Action(() => { tbOutput.Text = hexString; tbQt.Text = dadosRecebidos.Length.ToString(); tbChaveRemPub.Text = hexString; tbSegredo.Text = BitConverter.ToString(SegredoCompartilhado).Replace("-", " "); })); // Atualizar o TextBox na thread principal                
-                }                
+                    string hexString = BitConverter.ToString(chavePublicaRem).Replace("-", " "); // Converter para HEX                
+                    BeginInvoke(new Action(() => { tbOutput.Text = hexString; tbQt.Text = chavePublicaRem.Length.ToString(); tbChaveRemPub.Text = hexString; tbSegredo.Text = BitConverter.ToString(SegredoCompartilhado).Replace("-", " "); })); // Atualizar o TextBox na thread principal                
+                    maquinaEstados = ME.Recebe_Desafio;
+
             }
-            else // Recebendo mensagem criptografada
+            else if (maquinaEstados == ME.Recebe_Desafio) // Recebendo desafio criptografado
             {
                 int qt = serialPort1.BytesToRead;
-                //if (serialPort1.BytesToRead >= 16)
-                //{
-                    desafioCriptografado = new byte[serialPort1.BytesToRead];
-                    serialPort1.Read(desafioCriptografado, 0, serialPort1.BytesToRead);
-                    string hexString = BitConverter.ToString(desafioCriptografado).Replace("-", " "); // Converter para HEX
+                
+                byte[] dadosRecebidosSemHeader = new byte[dadosRecebidos.Length - 2];
+                Array.Copy(dadosRecebidos, 1, dadosRecebidosSemHeader, 0, dadosRecebidosSemHeader.Length);
 
-                    //byte[] salt = Encoding.ASCII.GetBytes("DATAPROM");
-                    //byte[] info = Encoding.ASCII.GetBytes("SECRETCOMM");
-                    var hkdf = new HkdfBytesGenerator(new Sha256Digest());
-                    hkdf.Init(new HkdfParameters(SegredoCompartilhado, salt, info));
-                    hkdf.GenerateBytes(aesKey, 0, aesKey.Length);
-                    hkdf.GenerateBytes(iv, 0, iv.Length);
+                
+                int tamPacote = 0;
+                var desafioCriptografado = DesempacotaDadosProtocolo(dadosRecebidosSemHeader, out tamPacote);
+                
+                string hexString = BitConverter.ToString(desafioCriptografado).Replace("-", " "); // Converter para HEX
+                                
+                var hkdf = new HkdfBytesGenerator(new Sha256Digest());
+                hkdf.Init(new HkdfParameters(SegredoCompartilhado, salt, info));
+                hkdf.GenerateBytes(aesKey, 0, aesKey.Length);
+                hkdf.GenerateBytes(iv, 0, iv.Length);
 
-                    using (Aes aes = Aes.Create())
+                using (Aes aes = Aes.Create())
+                {
+                    aes.Mode = CipherMode.CBC;                    
+                    aes.Padding = PaddingMode.PKCS7; // ou PaddingMode.PKCS7 se houver padding
+                    aes.KeySize = 256;
+                    aes.BlockSize = 128;
+                    aes.Key = aesKey;
+                    aes.IV = iv;
+
+                    using (var decryptor = aes.CreateDecryptor())
                     {
-                        aes.Mode = CipherMode.CBC;
-                        aes.Padding = PaddingMode.None; // ou PaddingMode.PKCS7 se houver padding
-                        aes.KeySize = 256;
-                        aes.BlockSize = 128;
-                        aes.Key = aesKey;
-                        aes.IV = iv;
+                        byte[] textoDescriptografado = decryptor.TransformFinalBlock(desafioCriptografado, 0, desafioCriptografado.Length);
+                        BeginInvoke(new Action(() => { tbDesafio.Text = System.Text.Encoding.UTF8.GetString(textoDescriptografado); })); // Atualizar o TextBox na thread principal                
+                    }
+                }
 
-                        using (var decryptor = aes.CreateDecryptor())
-                        {
-                            byte[] textoDescriptografado = decryptor.TransformFinalBlock(desafioCriptografado, 0, desafioCriptografado.Length);
-                            BeginInvoke(new Action(() => { tbDesafio.Text = System.Text.Encoding.UTF8.GetString(textoDescriptografado); })); // Atualizar o TextBox na thread principal                
-                        }
-                    }                 
-
-                    BeginInvoke(new Action(() => { tbOutput.Text = hexString; tbQt.Text = desafioCriptografado.Length.ToString(); }));
-                //}
+                BeginInvoke(new Action(() => { tbOutput.Text = hexString; tbQt.Text = desafioCriptografado.Length.ToString(); }));
+                
             }
         }
 
         static byte[] DeriveFromHKDF(byte[] secret, byte[] salt, string infoText, int outputLength)
+            /*Deriva IV a partir de um contexto e um numero de iterações*/
         {
             byte[] info = Encoding.ASCII.GetBytes(infoText);
             var hkdf = new HkdfBytesGenerator(new Sha256Digest());
@@ -198,18 +257,102 @@ namespace SimPgmDataprom
         }
 
         static byte[] GenerateSharedSecret(ECPrivateKeyParameters privateKey, ECPublicKeyParameters publicKey)
-        {
-            //var agreement = new ECDHBasicAgreement();
-            //agreement.Init(privateKey);
-            //var sharedSecret = agreement.CalculateAgreement(publicKey);
-            ////return sharedSecret.ToByteArray().Skip(1).ToArray();
-            //return sharedSecret.ToByteArray();
-
+        { 
             var ecDomain = privateKey.Parameters;
             var q = publicKey.Q.Multiply(privateKey.D).Normalize();
             var encodedPoint = q.GetEncoded(false); // false → formato não compactado, inclui 0x04
             return encodedPoint;
         }
+        public static byte[] DesempacotaDadosProtocolo(byte[] input, out int lenOut)
+        {
+            if (input == null || input.Length == 0)
+            {
+                lenOut = 0;
+                return null;
+            }
 
+            int totalBits = input.Length * 7;
+            lenOut = totalBits / 8;
+            byte[] output = new byte[lenOut];
+
+            int inIndex = input.Length - 1;
+            int outIndex = lenOut - 1;
+            int shift = 1;            
+
+            for (outIndex = lenOut - 1; outIndex >= 0; outIndex--)
+            {
+                output[outIndex] = (byte)(input[inIndex] << shift);
+
+                output[outIndex] = ClearLSBNBits(output[outIndex], shift);                
+                output[outIndex] |= (byte)((input[inIndex - 1] & 0b01111111) >> (7 - shift));
+                inIndex--;
+
+                if ((shift + 1) % 8 != 0)
+                {
+                    shift++;
+
+                }
+                else
+                {
+                    shift = 1;
+                    inIndex--;
+                }
+            }
+
+            return output;            
+        }        
+
+        public static byte[] EmpacotaDadosProtocolo(byte[] input, out int lenOut)
+            /*Empacota dados em 7 bits*/
+        {    
+            int totalBits = input.Length * 8;
+            lenOut = (totalBits % 7 != 0) ? (totalBits / 7) + 1 : (totalBits / 7);
+            byte[] output = new byte[lenOut];
+
+            int j = lenOut - 1;
+            int shift = 1;
+            byte msb = 0, lsb = 0;               
+
+
+            for (int i = input.Length - 1; i >= 0; i--)
+            {
+                msb = input[i];
+                msb >>= shift;
+                lsb = input[i];
+
+                lsb = ClearMSBNBits(lsb, 8 - shift);
+                lsb <<= (7 - shift);
+
+
+                output[j] |= 0x80;
+                output[j] |= msb;
+                j--;
+                output[j] |= 0x80;
+                output[j] |= lsb;
+
+                if ((shift + 1) % 8 != 0)
+                {
+                    shift++;
+
+                }
+                else
+                {
+                    shift = 1;
+                    j--;
+                }
+            }
+            
+            return output;            
+        }
+
+        private static byte ClearLSBNBits(byte b, int n)
+        {
+            return (byte)(b & (~((1 << n) - 1)));
+        }
+
+        private static byte ClearMSBNBits(byte b, int n)
+        {
+            return (byte)(b & ((1 << (8 - n)) - 1));
+        }
     }
 }

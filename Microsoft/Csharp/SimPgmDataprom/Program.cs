@@ -11,9 +11,13 @@ namespace SimPgmDataprom
     public enum ME
     {
         None = 0,
-        Desconectado,
-        Conectado,
-        Aguardando,
+        Desconectado,                
+        Envia_PBK_Local,
+        Recebe_PBK_Remota,
+        Recebe_Desafio,
+        Envia_Solucao,
+        BD_Solicita_FW,
+        BR_Recebe_FW
     };
     internal static class Program
     {
