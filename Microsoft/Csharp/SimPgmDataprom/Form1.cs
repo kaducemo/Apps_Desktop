@@ -41,9 +41,10 @@ namespace SimPgmDataprom
         byte[] aesKey = new byte[32]; //Chave para AES256
         byte[] iv = new byte[16]; //Tabela IV
         bool chavePublicaRemotaRecebida = false;
-        byte[] salt = Encoding.ASCII.GetBytes("DATAPROM");
-        byte[] info = Encoding.ASCII.GetBytes("SECRETCOMM");
-        
+        byte[] salt = Encoding.ASCII.GetBytes("DATAPROM_SALT");
+        byte[] info = new byte[18] { (byte)'D', (byte)'A', (byte)'T', (byte)'A', (byte)'S', (byte)'E', (byte)'C', (byte)'R', (byte)'E', (byte)'T',
+                                            0,          0,          0,        0,         0,         0,         0,       0};
+
         public Form1()
         {
             InitializeComponent();
@@ -173,8 +174,7 @@ namespace SimPgmDataprom
         {
             if (maquinaEstados == ME.Recebe_PBK_Remota)
             {                
-                    chavePublicaRemotaRecebida = true;
-                    
+                    chavePublicaRemotaRecebida = true;                    
 
                     //Retira header
                     byte[] dadosRecebidosSemHeader = new byte[dadosRecebidos.Length - 2];
@@ -196,27 +196,29 @@ namespace SimPgmDataprom
 
             }
             else if (maquinaEstados == ME.Recebe_Desafio) // Recebendo desafio criptografado
-            {
-                int qt = serialPort1.BytesToRead;
-                
+            {               
                 byte[] dadosRecebidosSemHeader = new byte[dadosRecebidos.Length - 2];
                 Array.Copy(dadosRecebidos, 1, dadosRecebidosSemHeader, 0, dadosRecebidosSemHeader.Length);
-
                 
                 int tamPacote = 0;
                 var desafioCriptografado = DesempacotaDadosProtocolo(dadosRecebidosSemHeader, out tamPacote);
                 
+                Buffer.BlockCopy(desafioCriptografado, 0, info, info.Length - 8, 8);
+
                 string hexString = BitConverter.ToString(desafioCriptografado).Replace("-", " "); // Converter para HEX
                                 
-                var hkdf = new HkdfBytesGenerator(new Sha256Digest());
-                hkdf.Init(new HkdfParameters(SegredoCompartilhado, salt, info));
-                hkdf.GenerateBytes(aesKey, 0, aesKey.Length);
-                hkdf.GenerateBytes(iv, 0, iv.Length);
+                var hkdfKey = new HkdfBytesGenerator(new Sha256Digest());
+                hkdfKey.Init(new HkdfParameters(SegredoCompartilhado, salt, info.Take(10).ToArray()));
+                hkdfKey.GenerateBytes(aesKey, 0, aesKey.Length);
+
+                var hkdfIV = new HkdfBytesGenerator(new Sha256Digest());
+                hkdfIV.Init(new HkdfParameters(SegredoCompartilhado, salt, info));
+                hkdfIV.GenerateBytes(iv, 0, iv.Length);                
 
                 using (Aes aes = Aes.Create())
                 {
                     aes.Mode = CipherMode.CBC;                    
-                    aes.Padding = PaddingMode.PKCS7; // ou PaddingMode.PKCS7 se houver padding
+                    aes.Padding = PaddingMode.PKCS7; 
                     aes.KeySize = 256;
                     aes.BlockSize = 128;
                     aes.Key = aesKey;
@@ -224,7 +226,7 @@ namespace SimPgmDataprom
 
                     using (var decryptor = aes.CreateDecryptor())
                     {
-                        byte[] textoDescriptografado = decryptor.TransformFinalBlock(desafioCriptografado, 0, desafioCriptografado.Length);
+                        byte[] textoDescriptografado = decryptor.TransformFinalBlock(desafioCriptografado.Skip(8).ToArray(), 0, desafioCriptografado.Length-8);
                         BeginInvoke(new Action(() => { tbDesafio.Text = System.Text.Encoding.UTF8.GetString(textoDescriptografado); })); // Atualizar o TextBox na thread principal                
                     }
                 }
