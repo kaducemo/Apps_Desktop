@@ -44,6 +44,7 @@ namespace SimPgmDataprom
         byte[] salt = Encoding.ASCII.GetBytes("DATAPROM_SALT");
         byte[] info = new byte[18] { (byte)'D', (byte)'A', (byte)'T', (byte)'A', (byte)'S', (byte)'E', (byte)'C', (byte)'R', (byte)'E', (byte)'T',
                                             0,          0,          0,        0,         0,         0,         0,       0};
+        UInt64 contadorMensagens = 0;
 
         public Form1()
         {
@@ -84,13 +85,13 @@ namespace SimPgmDataprom
                 int tam1 = 0;
                 byte[] dadosEmpacotados = EmpacotaDadosProtocolo(publicKeyBytes, out tam1);
                                 
-                byte[] dadosEmpacotadoscomHeader = new byte[dadosEmpacotados.Length + 2];
+                //byte[] dadosEmpacotadoscomHeader = new byte[dadosEmpacotados.Length + 2];
 
-                dadosEmpacotadoscomHeader[0] = 0x02; // início
-                Array.Copy(dadosEmpacotados, 0, dadosEmpacotadoscomHeader, 1, dadosEmpacotados.Length);
-                dadosEmpacotadoscomHeader[dadosEmpacotadoscomHeader.Length - 1] = 0x03; // final
+                //dadosEmpacotadoscomHeader[0] = 0x02; // início
+                //Array.Copy(dadosEmpacotados, 0, dadosEmpacotadoscomHeader, 1, dadosEmpacotados.Length);
+                //dadosEmpacotadoscomHeader[dadosEmpacotadoscomHeader.Length - 1] = 0x03; // final
 
-                serialPort1.Write(dadosEmpacotadoscomHeader, 0, dadosEmpacotadoscomHeader.Length);
+                serialPort1.Write(dadosEmpacotados, 0, dadosEmpacotados.Length);
                 maquinaEstados = ME.Recebe_PBK_Remota;                
 
                 BeginInvoke(new Action(() => { tbChaveLocalPriv.Text = BitConverter.ToString(privateKeyBytes).Replace("-", " "); })); // Atualizar o TextBox na thread principal
@@ -193,6 +194,7 @@ namespace SimPgmDataprom
                     string hexString = BitConverter.ToString(chavePublicaRem).Replace("-", " "); // Converter para HEX                
                     BeginInvoke(new Action(() => { tbOutput.Text = hexString; tbQt.Text = chavePublicaRem.Length.ToString(); tbChaveRemPub.Text = hexString; tbSegredo.Text = BitConverter.ToString(SegredoCompartilhado).Replace("-", " "); })); // Atualizar o TextBox na thread principal                
                     maquinaEstados = ME.Recebe_Desafio;
+                    tsslStatus.Text = "Segredo ECDH criado";
 
             }
             else if (maquinaEstados == ME.Recebe_Desafio) // Recebendo desafio criptografado
@@ -201,19 +203,21 @@ namespace SimPgmDataprom
                 Array.Copy(dadosRecebidos, 1, dadosRecebidosSemHeader, 0, dadosRecebidosSemHeader.Length);
                 
                 int tamPacote = 0;
-                var desafioCriptografado = DesempacotaDadosProtocolo(dadosRecebidosSemHeader, out tamPacote);
-                
-                Buffer.BlockCopy(desafioCriptografado, 0, info, info.Length - 8, 8);
+                byte[] desafioCriptografado = DesempacotaDadosProtocolo(dadosRecebidosSemHeader, out tamPacote);
 
-                string hexString = BitConverter.ToString(desafioCriptografado).Replace("-", " "); // Converter para HEX
+                contadorMensagens = BitConverter.ToUInt64(desafioCriptografado.Take(8).ToArray(), 0); // Atualiza contador com o índice atual da mensagem
+
+                Buffer.BlockCopy(desafioCriptografado, 0, info, info.Length - 8, 8); // Copia o contador para o final do info
+
+                string hexString = BitConverter.ToString(desafioCriptografado).Replace("-", " "); // Converte os dados recebidos p/HEX e salva para ser impresso em uma Textbox de RX
                                 
-                var hkdfKey = new HkdfBytesGenerator(new Sha256Digest());
-                hkdfKey.Init(new HkdfParameters(SegredoCompartilhado, salt, info.Take(10).ToArray()));
-                hkdfKey.GenerateBytes(aesKey, 0, aesKey.Length);
+                var hkdfKey = new HkdfBytesGenerator(new Sha256Digest()); //Cria um gerador HKDF para chave
+                hkdfKey.Init(new HkdfParameters(SegredoCompartilhado, salt, info.Take(10).ToArray())); //Nao usa contador (no info) para gerar a chave
+                hkdfKey.GenerateBytes(aesKey, 0, aesKey.Length); // Gera chave
 
-                var hkdfIV = new HkdfBytesGenerator(new Sha256Digest());
-                hkdfIV.Init(new HkdfParameters(SegredoCompartilhado, salt, info));
-                hkdfIV.GenerateBytes(iv, 0, iv.Length);                
+                var hkdfIV = new HkdfBytesGenerator(new Sha256Digest()); //Cria um novo gerador HKDF pra IV
+                hkdfIV.Init(new HkdfParameters(SegredoCompartilhado, salt, info)); //Usa toda a string do info para gerar a gacha
+                hkdfIV.GenerateBytes(iv, 0, iv.Length); // Gera IV                
 
                 using (Aes aes = Aes.Create())
                 {
@@ -228,23 +232,50 @@ namespace SimPgmDataprom
                     {
                         byte[] textoDescriptografado = decryptor.TransformFinalBlock(desafioCriptografado.Skip(8).ToArray(), 0, desafioCriptografado.Length-8);
                         BeginInvoke(new Action(() => { tbDesafio.Text = System.Text.Encoding.UTF8.GetString(textoDescriptografado); })); // Atualizar o TextBox na thread principal                
+                        
                     }
                 }
 
                 BeginInvoke(new Action(() => { tbOutput.Text = hexString; tbQt.Text = desafioCriptografado.Length.ToString(); }));
-                
-            }
-        }
 
-        static byte[] DeriveFromHKDF(byte[] secret, byte[] salt, string infoText, int outputLength)
-            /*Deriva IV a partir de um contexto e um numero de iterações*/
-        {
-            byte[] info = Encoding.ASCII.GetBytes(infoText);
-            var hkdf = new HkdfBytesGenerator(new Sha256Digest());
-            hkdf.Init(new HkdfParameters(secret, salt, info));
-            byte[] output = new byte[outputLength];
-            hkdf.GenerateBytes(output, 0, outputLength);
-            return output;
+                maquinaEstados = ME.Envia_Solucao;                
+                
+                byte[] solucaoBytes = System.Text.Encoding.ASCII.GetBytes(tbDesafioLocal.Text); // Transforma a solução em Bytes
+                //var paddedsolucaoBytes = AplicarPkcs7Padding(solucaoBytes, solucaoBytes.Length); // Aplica Padding na solução
+
+                //Criptografar dados
+                contadorMensagens += 1;
+                byte[] contadorMensagensBytes = BitConverter.GetBytes(contadorMensagens); //Transforma contadorMensagens em bytes
+                if (BitConverter.IsLittleEndian == false) Array.Reverse(contadorMensagensBytes); // garante little-endian se necessário                
+                Buffer.BlockCopy(contadorMensagensBytes, 0, info, 10, contadorMensagensBytes.Length); //Atualiza o info para criar uma nova IV
+
+                hkdfIV = new HkdfBytesGenerator(new Sha256Digest());
+                hkdfIV.Init(new HkdfParameters(SegredoCompartilhado, salt, info));
+                hkdfIV.GenerateBytes(iv, 0, iv.Length); // Atualiza IV usando o novo INFO
+
+                //Criptografa (SOMENTE DADOS) usando AES/CBC/PKCS7, com a chave e a nova IV
+                IBufferedCipher cipher = CipherUtilities.GetCipher("AES/CBC/PKCS7Padding");
+                KeyParameter keyParam = new KeyParameter(aesKey);
+                cipher.Init(true, new ParametersWithIV(keyParam, iv)); // true = modo de encriptação
+                byte[] solucaoCriptograda = cipher.DoFinal(solucaoBytes);
+
+                // Anexa o Contador de mensagens antes dos dados criptografados                
+                byte[] contadorCripSolucaoBytes = new byte[solucaoCriptograda.Length + contadorMensagensBytes.Length];
+                
+                //Copia contador e dados para buffer de saida
+                Buffer.BlockCopy(contadorMensagensBytes, 0, contadorCripSolucaoBytes, 0, contadorMensagensBytes.Length);
+                Buffer.BlockCopy(solucaoCriptograda, 0, contadorCripSolucaoBytes, contadorMensagensBytes.Length, solucaoCriptograda.Length);
+
+                //Enquadra dados (7bits e Header)
+                int tamQuadroTX = 0;
+                var quadroTX = EmpacotaDadosProtocolo(contadorCripSolucaoBytes, out tamQuadroTX);
+
+                //Envia Dados
+                serialPort1.Write(quadroTX, 0, quadroTX.Length);
+                
+                // Atualiza Barra de Status
+                tsslStatus.Text = "Desafio Remoto Recebido. Solução Enviada...";
+            }            
         }
 
 
@@ -343,8 +374,14 @@ namespace SimPgmDataprom
                     j--;
                 }
             }
-            
-            return output;            
+
+            byte[] dadosEmpacotadoscomHeader = new byte[output.Length + 2];
+
+            dadosEmpacotadoscomHeader[0] = 0x02; // início
+            Array.Copy(output, 0, dadosEmpacotadoscomHeader, 1, output.Length);
+            dadosEmpacotadoscomHeader[dadosEmpacotadoscomHeader.Length - 1] = 0x03; // final
+
+            return dadosEmpacotadoscomHeader;            
         }
 
         private static byte ClearLSBNBits(byte b, int n)
