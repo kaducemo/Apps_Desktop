@@ -3,11 +3,11 @@
   "WorkspaceRootPath": "C:\\Local\\SOFTWARE\\GITHUB\\Apps_Desktop\\Microsoft\\Csharp\\SimPgmDataprom\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{80C21FB7-CAC2-4E3D-88E6-E2846F99EAC4}|SimPgmDataprom.csproj|C:\\Local\\SOFTWARE\\GITHUB\\Apps_Desktop\\Microsoft\\Csharp\\SimPgmDataprom\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{80C21FB7-CAC2-4E3D-88E6-E2846F99EAC4}|SimPgmDataprom.csproj|c:\\local\\software\\github\\apps_desktop\\microsoft\\csharp\\simpgmdataprom\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{80C21FB7-CAC2-4E3D-88E6-E2846F99EAC4}|SimPgmDataprom.csproj|solutionrelative:form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{80C21FB7-CAC2-4E3D-88E6-E2846F99EAC4}|SimPgmDataprom.csproj|c:\\local\\software\\github\\apps_desktop\\microsoft\\csharp\\simpgmdataprom\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "AbsoluteMoniker": "D:0:0:{80C21FB7-CAC2-4E3D-88E6-E2846F99EAC4}|SimPgmDataprom.csproj|C:\\Local\\SOFTWARE\\GITHUB\\Apps_Desktop\\Microsoft\\Csharp\\SimPgmDataprom\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
       "RelativeMoniker": "D:0:0:{80C21FB7-CAC2-4E3D-88E6-E2846F99EAC4}|SimPgmDataprom.csproj|solutionrelative:form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
     },
     {
@@ -32,7 +32,7 @@
               "RelativeDocumentMoniker": "Form1.cs",
               "ToolTip": "C:\\Local\\SOFTWARE\\GITHUB\\Apps_Desktop\\Microsoft\\Csharp\\SimPgmDataprom\\Form1.cs",
               "RelativeToolTip": "Form1.cs",
-              "ViewState": "AgIAAF0BAAAAAAAAAAAnwG4BAAARAAAAAAAAAA==",
+              "ViewState": "AgIAAEwBAAAAAAAAAAAewG4BAAARAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-06-05T17:52:25.96Z",
               "EditorCaption": ""
@@ -47,8 +47,7 @@
               "RelativeToolTip": "Program.cs",
               "ViewState": "AgIAAB0AAAAAAAAAAAAQwCYAAAAMAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-06-13T15:13:00.009Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-06-13T15:13:00.009Z"
             },
             {
               "$type": "Document",
@@ -59,8 +58,7 @@
               "ToolTip": "C:\\Local\\SOFTWARE\\GITHUB\\Apps_Desktop\\Microsoft\\Csharp\\SimPgmDataprom\\Form1.cs [Design]",
               "RelativeToolTip": "Form1.cs [Design]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-06-05T17:45:47.959Z",
-              "EditorCaption": " [Design]"
+              "WhenOpened": "2025-06-05T17:45:47.959Z"
             }
           ]
         }
