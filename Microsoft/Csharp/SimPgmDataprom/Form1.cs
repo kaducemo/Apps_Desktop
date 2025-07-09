@@ -28,18 +28,22 @@ using System.Security.Cryptography.X509Certificates;
 using Org.BouncyCastle.Crypto.Digests;
 using System.Net.Sockets;
 using System.Security.Cryptography;
+using Org.BouncyCastle.Utilities;
 
 namespace SimPgmDataprom
 {
     public partial class Form1 : Form
     {
+        //Constantes
+        const int TAG_LEN = 16;
+        const int CONTADOR_LEN = 8;
 
         static AsymmetricCipherKeyPair parChavesProgramador;
         static ECPublicKeyParameters chavePublicaControlador;
         byte[] SegredoCompartilhado;
         byte[] desafioCriptografado = null;
         byte[] aesKey = new byte[32]; //Chave para AES256
-        byte[] iv = new byte[16]; //Tabela IV
+        byte[] iv = new byte[12]; //Tabela IV
         bool chavePublicaRemotaRecebida = false;
         byte[] salt = Encoding.ASCII.GetBytes("DATAPROM_SALT");
         byte[] info = new byte[18] { (byte)'D', (byte)'A', (byte)'T', (byte)'A', (byte)'S', (byte)'E', (byte)'C', (byte)'R', (byte)'E', (byte)'T',
@@ -84,12 +88,6 @@ namespace SimPgmDataprom
 
                 int tam1 = 0;
                 byte[] dadosEmpacotados = EmpacotaDadosProtocolo(publicKeyBytes, out tam1);
-                                
-                //byte[] dadosEmpacotadoscomHeader = new byte[dadosEmpacotados.Length + 2];
-
-                //dadosEmpacotadoscomHeader[0] = 0x02; // início
-                //Array.Copy(dadosEmpacotados, 0, dadosEmpacotadoscomHeader, 1, dadosEmpacotados.Length);
-                //dadosEmpacotadoscomHeader[dadosEmpacotadoscomHeader.Length - 1] = 0x03; // final
 
                 serialPort1.Write(dadosEmpacotados, 0, dadosEmpacotados.Length);
                 maquinaEstados = ME.Recebe_PBK_Remota;                
@@ -206,74 +204,83 @@ namespace SimPgmDataprom
                 byte[] desafioCriptografado = DesempacotaDadosProtocolo(dadosRecebidosSemHeader, out tamPacote);
 
                 contadorMensagens = BitConverter.ToUInt64(desafioCriptografado.Take(8).ToArray(), 0); // Atualiza contador com o índice atual da mensagem
-
-                Buffer.BlockCopy(desafioCriptografado, 0, info, info.Length - 8, 8); // Copia o contador para o final do info
+                
+                Buffer.BlockCopy(desafioCriptografado, 0, info, info.Length - CONTADOR_LEN, CONTADOR_LEN); // Copia o contador para o final do info
 
                 string hexString = BitConverter.ToString(desafioCriptografado).Replace("-", " "); // Converte os dados recebidos p/HEX e salva para ser impresso em uma Textbox de RX
                                 
                 var hkdfKey = new HkdfBytesGenerator(new Sha256Digest()); //Cria um gerador HKDF para chave
-                hkdfKey.Init(new HkdfParameters(SegredoCompartilhado, salt, info.Take(10).ToArray())); //Nao usa contador (no info) para gerar a chave
-                hkdfKey.GenerateBytes(aesKey, 0, aesKey.Length); // Gera chave
+                hkdfKey.Init(new HkdfParameters(SegredoCompartilhado, salt, info)); 
+                hkdfKey.GenerateBytes(aesKey, 0, aesKey.Length); // Gera chave AES256
 
                 var hkdfIV = new HkdfBytesGenerator(new Sha256Digest()); //Cria um novo gerador HKDF pra IV
-                hkdfIV.Init(new HkdfParameters(SegredoCompartilhado, salt, info)); //Usa toda a string do info para gerar a gacha
-                hkdfIV.GenerateBytes(iv, 0, iv.Length); // Gera IV                
+                hkdfIV.Init(new HkdfParameters(SegredoCompartilhado, salt, info)); 
+                hkdfIV.GenerateBytes(iv, 0, iv.Length); // Gera IV
 
-                using (Aes aes = Aes.Create())
+                // Inicializa o AES-GCM
+                var gcm = new GcmBlockCipher(new AesEngine());
+                var aeadParams = new AeadParameters(new KeyParameter(aesKey), TAG_LEN * 8, iv);
+                gcm.Init(false, aeadParams); // false = modo decifrar
+
+                byte[] entrada = desafioCriptografado.Skip(8).ToArray();                
+                byte[] resultado = new byte[gcm.GetOutputSize(entrada.Length)];
+
+                try
                 {
-                    aes.Mode = CipherMode.CBC;                    
-                    aes.Padding = PaddingMode.PKCS7; 
-                    aes.KeySize = 256;
-                    aes.BlockSize = 128;
-                    aes.Key = aesKey;
-                    aes.IV = iv;
+                    int len = gcm.ProcessBytes(entrada, 0, entrada.Length, resultado, 0);
+                    len += gcm.DoFinal(resultado, len);
 
-                    using (var decryptor = aes.CreateDecryptor())
-                    {
-                        byte[] textoDescriptografado = decryptor.TransformFinalBlock(desafioCriptografado.Skip(8).ToArray(), 0, desafioCriptografado.Length-8);
-                        BeginInvoke(new Action(() => { tbDesafio.Text = System.Text.Encoding.UTF8.GetString(textoDescriptografado); })); // Atualizar o TextBox na thread principal                
-                        
-                    }
+                    string desafioDecifrado = Encoding.UTF8.GetString(resultado, 0, len);
+                    BeginInvoke(new Action(() => { tbDesafio.Text = desafioDecifrado; })); // Atualizar o TextBox na thread principal 
                 }
+                catch (InvalidCipherTextException)
+                {
+                    BeginInvoke(new Action(() => { tbDesafio.Text = "Desafio Inválido"; })); // Atualizar o TextBox na thread principal 
+                }                
 
                 BeginInvoke(new Action(() => { tbOutput.Text = hexString; tbQt.Text = desafioCriptografado.Length.ToString(); }));
 
                 maquinaEstados = ME.Envia_Solucao;                
                 
                 byte[] solucaoBytes = System.Text.Encoding.ASCII.GetBytes(tbDesafioLocal.Text); // Transforma a solução em Bytes
-                //var paddedsolucaoBytes = AplicarPkcs7Padding(solucaoBytes, solucaoBytes.Length); // Aplica Padding na solução
-
+                
                 //Criptografar dados
                 contadorMensagens += 1;
+
                 byte[] contadorMensagensBytes = BitConverter.GetBytes(contadorMensagens); //Transforma contadorMensagens em bytes
                 if (BitConverter.IsLittleEndian == false) Array.Reverse(contadorMensagensBytes); // garante little-endian se necessário                
-                Buffer.BlockCopy(contadorMensagensBytes, 0, info, 10, contadorMensagensBytes.Length); //Atualiza o info para criar uma nova IV
+                Buffer.BlockCopy(contadorMensagensBytes, 0, info, info.Length - CONTADOR_LEN, contadorMensagensBytes.Length); //Atualiza o info para criar uma nova IV
+
+                hkdfKey = new HkdfBytesGenerator(new Sha256Digest()); //Cria um gerador HKDF para chave
+                hkdfKey.Init(new HkdfParameters(SegredoCompartilhado, salt, info));
+                hkdfKey.GenerateBytes(aesKey, 0, aesKey.Length); // Gera chave AES256
 
                 hkdfIV = new HkdfBytesGenerator(new Sha256Digest());
                 hkdfIV.Init(new HkdfParameters(SegredoCompartilhado, salt, info));
                 hkdfIV.GenerateBytes(iv, 0, iv.Length); // Atualiza IV usando o novo INFO
 
-                //Criptografa (SOMENTE DADOS) usando AES/CBC/PKCS7, com a chave e a nova IV
-                IBufferedCipher cipher = CipherUtilities.GetCipher("AES/CBC/PKCS7Padding");
-                KeyParameter keyParam = new KeyParameter(aesKey);
-                cipher.Init(true, new ParametersWithIV(keyParam, iv)); // true = modo de encriptação
-                byte[] solucaoCriptograda = cipher.DoFinal(solucaoBytes);
+                // Criptografa com AES-GCM
+                var gcmEnc = new GcmBlockCipher(new AesEngine());
+                var aeadParamsEnc = new AeadParameters(new KeyParameter(aesKey), TAG_LEN * 8, iv); // 128 = TAG de 16 bytes
+                gcmEnc.Init(true, aeadParamsEnc); // true = encriptação
 
-                // Anexa o Contador de mensagens antes dos dados criptografados                
-                byte[] contadorCripSolucaoBytes = new byte[solucaoCriptograda.Length + contadorMensagensBytes.Length];
-                
-                //Copia contador e dados para buffer de saida
-                Buffer.BlockCopy(contadorMensagensBytes, 0, contadorCripSolucaoBytes, 0, contadorMensagensBytes.Length);
-                Buffer.BlockCopy(solucaoCriptograda, 0, contadorCripSolucaoBytes, contadorMensagensBytes.Length, solucaoCriptograda.Length);
+                byte[] cifra = new byte[gcmEnc.GetOutputSize(solucaoBytes.Length)];
+                int lenEnc = gcmEnc.ProcessBytes(solucaoBytes, 0, solucaoBytes.Length, cifra, 0);
+                lenEnc += gcmEnc.DoFinal(cifra, lenEnc); // cifra contém dados + tag
 
-                //Enquadra dados (7bits e Header)
+                // Monta quadro: [contador | cifra (dados) |  tag]
+                byte[] quadroPayload = new byte[contadorMensagensBytes.Length + lenEnc];
+                Buffer.BlockCopy(contadorMensagensBytes, 0, quadroPayload, 0, contadorMensagensBytes.Length);
+                Buffer.BlockCopy(cifra, 0, quadroPayload, contadorMensagensBytes.Length, lenEnc);
+
+                // Aplica protocolo de empacotamento
                 int tamQuadroTX = 0;
-                var quadroTX = EmpacotaDadosProtocolo(contadorCripSolucaoBytes, out tamQuadroTX);
-
-                //Envia Dados
-                serialPort1.Write(quadroTX, 0, quadroTX.Length);
+                var quadroTX = EmpacotaDadosProtocolo(quadroPayload, out tamQuadroTX);
                 
-                // Atualiza Barra de Status
+                // Envia pela serial
+                serialPort1.Write(quadroTX, 0, quadroTX.Length);
+
+                // Atualiza status
                 tsslStatus.Text = "Desafio Remoto Recebido. Solução Enviada...";
             }            
         }
