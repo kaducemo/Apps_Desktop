@@ -7,6 +7,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Net;
+using System.Net.Sockets;
+
 
 
 
@@ -41,6 +44,7 @@ namespace SimPgmDataprom
         static AsymmetricCipherKeyPair parChavesProgramador;
         static ECPublicKeyParameters chavePublicaControlador;
         byte[] SegredoCompartilhado;
+        byte[] IKM = null;
         byte[] desafioCriptografado = null;
         byte[] aesKey = new byte[32]; //Chave para AES256
         byte[] iv = new byte[12]; //Tabela IV
@@ -53,6 +57,65 @@ namespace SimPgmDataprom
         public Form1()
         {
             InitializeComponent();
+            InicializaServidorTCP();
+        }
+
+        async void InicializaServidorTCP()
+        {
+            int porta = 5000;
+            TcpListener servidor = new TcpListener(IPAddress.Any, porta);
+            servidor.Start();
+            Console.WriteLine($"Servidor assíncrono iniciado na porta {porta}...");
+
+            while (true)
+            {
+                TcpClient cliente = await servidor.AcceptTcpClientAsync();
+                BeginInvoke(new Action(() => { tsslStatus.Text = "Conectado TCP/IP"; btConectar.Enabled = false; })); // Atualizar o TextBox na thread principal
+                // Trata o cliente de forma assíncrona
+                _ = TratarClienteAsync(cliente);
+            }
+        }
+
+        async Task TratarClienteAsync(TcpClient cliente)
+        {
+            NetworkStream stream = null;
+            try
+            {
+                stream = cliente.GetStream();
+                while (true)
+                {
+                    //using (NetworkStream stream = cliente.GetStream())
+                    //{
+                        byte[] buffer = new byte[1024];
+                        int bytesLidos = await stream.ReadAsync(buffer, 0, buffer.Length);
+                        string mensagemRecebida = Encoding.UTF8.GetString(buffer, 0, bytesLidos);
+
+                        //Console.WriteLine($"Mensagem recebida: {mensagemRecebida}");
+
+                        string resposta = "Mensagem recebida com sucesso!" + mensagemRecebida;
+                        byte[] dadosResposta = Encoding.UTF8.GetBytes(resposta);
+
+                        BeginInvoke(new Action(() => { tbOutput.Text = mensagemRecebida; })); // Atualizar o TextBox na thread principal
+
+
+                        await stream.WriteAsync(dadosResposta, 0, dadosResposta.Length);
+                    //}
+                }
+            }
+
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro ou desconexão inesperada: {ex.Message}");
+            }
+            finally
+            {
+                if (stream != null)
+                    stream.Close();
+
+                cliente.Close();
+                BeginInvoke(new Action(() => { tsslStatus.Text = "Conexão TCP/IP Encerrada"; btConectar.Enabled = true; })); // Atualizar o TextBox na thread principal
+                
+            }            
         }
 
         static AsymmetricCipherKeyPair GenerateKeyPair()
@@ -188,6 +251,8 @@ namespace SimPgmDataprom
                     chavePublicaControlador = new ECPublicKeyParameters(point, domainParams);
                     SegredoCompartilhado = null;
                     SegredoCompartilhado = GenerateSharedSecret(parChavesProgramador.Private as ECPrivateKeyParameters, chavePublicaControlador);
+                    IKM = new byte[65];
+                    PSKLib.Get_PSK_IKM(1, SegredoCompartilhado,out IKM);
 
                     string hexString = BitConverter.ToString(chavePublicaRem).Replace("-", " "); // Converter para HEX                
                     BeginInvoke(new Action(() => { tbOutput.Text = hexString; tbQt.Text = chavePublicaRem.Length.ToString(); tbChaveRemPub.Text = hexString; tbSegredo.Text = BitConverter.ToString(SegredoCompartilhado).Replace("-", " "); })); // Atualizar o TextBox na thread principal                
@@ -210,11 +275,11 @@ namespace SimPgmDataprom
                 string hexString = BitConverter.ToString(desafioCriptografado).Replace("-", " "); // Converte os dados recebidos p/HEX e salva para ser impresso em uma Textbox de RX
                                 
                 var hkdfKey = new HkdfBytesGenerator(new Sha256Digest()); //Cria um gerador HKDF para chave
-                hkdfKey.Init(new HkdfParameters(SegredoCompartilhado, salt, info)); 
+                hkdfKey.Init(new HkdfParameters(IKM, salt, info)); 
                 hkdfKey.GenerateBytes(aesKey, 0, aesKey.Length); // Gera chave AES256
 
                 var hkdfIV = new HkdfBytesGenerator(new Sha256Digest()); //Cria um novo gerador HKDF pra IV
-                hkdfIV.Init(new HkdfParameters(SegredoCompartilhado, salt, info)); 
+                hkdfIV.Init(new HkdfParameters(IKM, salt, info)); 
                 hkdfIV.GenerateBytes(iv, 0, iv.Length); // Gera IV
 
                 // Inicializa o AES-GCM
@@ -252,11 +317,11 @@ namespace SimPgmDataprom
                 Buffer.BlockCopy(contadorMensagensBytes, 0, info, info.Length - CONTADOR_LEN, contadorMensagensBytes.Length); //Atualiza o info para criar uma nova IV
 
                 hkdfKey = new HkdfBytesGenerator(new Sha256Digest()); //Cria um gerador HKDF para chave
-                hkdfKey.Init(new HkdfParameters(SegredoCompartilhado, salt, info));
+                hkdfKey.Init(new HkdfParameters(IKM, salt, info));
                 hkdfKey.GenerateBytes(aesKey, 0, aesKey.Length); // Gera chave AES256
 
                 hkdfIV = new HkdfBytesGenerator(new Sha256Digest());
-                hkdfIV.Init(new HkdfParameters(SegredoCompartilhado, salt, info));
+                hkdfIV.Init(new HkdfParameters(IKM, salt, info));
                 hkdfIV.GenerateBytes(iv, 0, iv.Length); // Atualiza IV usando o novo INFO
 
                 // Criptografa com AES-GCM
