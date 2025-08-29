@@ -368,6 +368,22 @@ namespace SimPgmDataprom
             var encodedPoint = q.GetEncoded(false); // false → formato não compactado, inclui 0x04
             return encodedPoint;
         }
+
+
+        public static byte[] EncodeToBase64Bytes(byte[] input)
+        {
+            string base64 = Convert.ToBase64String(input);            
+            return System.Text.Encoding.ASCII.GetBytes(base64);
+        }
+
+        public static byte[] DecodeFromBase64Bytes(byte[] base64Bytes)
+        {
+            string base64 = System.Text.Encoding.ASCII.GetString(base64Bytes);
+            byte[] decoded = Convert.FromBase64String(base64);            
+            return decoded;
+        }
+
+
         public static byte[] DesempacotaDadosProtocolo(byte[] input, out int lenOut)
         {
             if (input == null || input.Length == 0)
@@ -376,76 +392,89 @@ namespace SimPgmDataprom
                 return null;
             }
 
-            int totalBits = input.Length * 7;
-            lenOut = totalBits / 8;
-            byte[] output = new byte[lenOut];
+            for (int i = 0; i < input.Length; i++) //retira o bit 1 de todos os dados
+                input[i] &= 0x7F;
 
-            int inIndex = input.Length - 1;
-            int outIndex = lenOut - 1;
-            int shift = 1;            
+            byte[] output = DecodeFromBase64Bytes(input);
+            lenOut = output.Length;
 
-            for (outIndex = lenOut - 1; outIndex >= 0; outIndex--)
-            {
-                output[outIndex] = (byte)(input[inIndex] << shift);
+            //int totalBits = input.Length * 7;
+            //lenOut = totalBits / 8;
+            //byte[] output = new byte[lenOut];
 
-                output[outIndex] = ClearLSBNBits(output[outIndex], shift);                
-                output[outIndex] |= (byte)((input[inIndex - 1] & 0b01111111) >> (7 - shift));
-                inIndex--;
+            //int inIndex = input.Length - 1;
+            //int outIndex = lenOut - 1;
+            //int shift = 1;            
 
-                if ((shift + 1) % 8 != 0)
-                {
-                    shift++;
+            //for (outIndex = lenOut - 1; outIndex >= 0; outIndex--)
+            //{
+            //    output[outIndex] = (byte)(input[inIndex] << shift);
 
-                }
-                else
-                {
-                    shift = 1;
-                    inIndex--;
-                }
-            }
+            //    output[outIndex] = ClearLSBNBits(output[outIndex], shift);                
+            //    output[outIndex] |= (byte)((input[inIndex - 1] & 0b01111111) >> (7 - shift));
+            //    inIndex--;
+
+            //    if ((shift + 1) % 8 != 0)
+            //    {
+            //        shift++;
+
+            //    }
+            //    else
+            //    {
+            //        shift = 1;
+            //        inIndex--;
+            //    }
+            //}
 
             return output;            
         }        
 
         public static byte[] EmpacotaDadosProtocolo(byte[] input, out int lenOut)
-            /*Empacota dados em 7 bits*/
-        {    
-            int totalBits = input.Length * 8;
-            lenOut = (totalBits % 7 != 0) ? (totalBits / 7) + 1 : (totalBits / 7);
-            byte[] output = new byte[lenOut];
+            /* Empacota dados em BASE64 */
+        {
 
-            int j = lenOut - 1;
-            int shift = 1;
-            byte msb = 0, lsb = 0;               
+            byte[] output = EncodeToBase64Bytes(input);
+            for (int i = 0; i < output.Length; i++)
+                output[i] = (byte)(output[i] | (0x80)); 
+            lenOut = output.Length;
 
 
-            for (int i = input.Length - 1; i >= 0; i--)
-            {
-                msb = input[i];
-                msb >>= shift;
-                lsb = input[i];
+            //int totalBits = input.Length * 8;
+            //lenOut = (totalBits % 7 != 0) ? (totalBits / 7) + 1 : (totalBits / 7);
+            //byte[] output = new byte[lenOut];
 
-                lsb = ClearMSBNBits(lsb, 8 - shift);
-                lsb <<= (7 - shift);
+            //int j = lenOut - 1;
+            //int shift = 1;
+            //byte msb = 0, lsb = 0;               
 
 
-                output[j] |= 0x80;
-                output[j] |= msb;
-                j--;
-                output[j] |= 0x80;
-                output[j] |= lsb;
+            //for (int i = input.Length - 1; i >= 0; i--)
+            //{
+            //    msb = input[i];
+            //    msb >>= shift;
+            //    lsb = input[i];
 
-                if ((shift + 1) % 8 != 0)
-                {
-                    shift++;
+            //    lsb = ClearMSBNBits(lsb, 8 - shift);
+            //    lsb <<= (7 - shift);
 
-                }
-                else
-                {
-                    shift = 1;
-                    j--;
-                }
-            }
+
+            //    output[j] |= 0x80;
+            //    output[j] |= msb;
+            //    j--;
+            //    output[j] |= 0x80;
+            //    output[j] |= lsb;
+
+            //    if ((shift + 1) % 8 != 0)
+            //    {
+            //        shift++;
+
+            //    }
+            //    else
+            //    {
+            //        shift = 1;
+            //        j--;
+            //    }
+            //}
 
             byte[] dadosEmpacotadoscomHeader = new byte[output.Length + 2];
 
