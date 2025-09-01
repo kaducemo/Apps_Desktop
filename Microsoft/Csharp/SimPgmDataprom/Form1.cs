@@ -37,7 +37,8 @@ namespace SimPgmDataprom
 {
     public partial class Form1 : Form
     {
-                
+       const int AES_KEY_LEN = 16; // Tamanho da CHAVE AES: 16 = AES128, 32 = AES256        
+
         //const int GCM_TAG_LEN = 16; // Tamanho da TAG GCM        
         //const int CONTADOR_LEN = 8; //Tamanho do contador
 
@@ -48,7 +49,7 @@ namespace SimPgmDataprom
         byte[] SegredoCompartilhado;
         byte[] IKM = null;
         byte[] desafioCriptografado = null;
-        byte[] aesKey = new byte[32]; //Chave para AES256
+        byte[] aesKey = new byte[AES_KEY_LEN]; //Chave para AES
         byte[] iv = new byte[12]; //Tabela IV
         bool chavePublicaRemotaRecebida = false;
         //byte[] salt = Encoding.ASCII.GetBytes("DATAPROM_SALT");
@@ -66,6 +67,16 @@ namespace SimPgmDataprom
         {
             InitializeComponent();
             InicializaServidorTCP();
+        }
+
+        private static byte ClearLSBNBits(byte b, int n)
+        {
+            return (byte)(b & (~((1 << n) - 1)));
+        }
+
+        private static byte ClearMSBNBits(byte b, int n)
+        {
+            return (byte)(b & ((1 << (8 - n)) - 1));
         }
 
         async void InicializaServidorTCP()
@@ -298,7 +309,7 @@ namespace SimPgmDataprom
                                 
                 var hkdfKey = new HkdfBytesGenerator(new Sha256Digest()); //Cria um gerador HKDF para chave
                 hkdfKey.Init(new HkdfParameters(IKM, salt, info)); 
-                hkdfKey.GenerateBytes(aesKey, 0, aesKey.Length); // Gera chave AES256
+                hkdfKey.GenerateBytes(aesKey, 0, aesKey.Length); // Gera chave AES128
 
                 var hkdfIV = new HkdfBytesGenerator(new Sha256Digest()); //Cria um novo gerador HKDF pra IV
                 hkdfIV.Init(new HkdfParameters(IKM, salt, info)); 
@@ -423,35 +434,7 @@ namespace SimPgmDataprom
                 input[i] &= 0x7F;
 
             byte[] output = DecodeFromBase64Bytes(input);
-            lenOut = output.Length;
-
-            //int totalBits = input.Length * 7;
-            //lenOut = totalBits / 8;
-            //byte[] output = new byte[lenOut];
-
-            //int inIndex = input.Length - 1;
-            //int outIndex = lenOut - 1;
-            //int shift = 1;            
-
-            //for (outIndex = lenOut - 1; outIndex >= 0; outIndex--)
-            //{
-            //    output[outIndex] = (byte)(input[inIndex] << shift);
-
-            //    output[outIndex] = ClearLSBNBits(output[outIndex], shift);                
-            //    output[outIndex] |= (byte)((input[inIndex - 1] & 0b01111111) >> (7 - shift));
-            //    inIndex--;
-
-            //    if ((shift + 1) % 8 != 0)
-            //    {
-            //        shift++;
-
-            //    }
-            //    else
-            //    {
-            //        shift = 1;
-            //        inIndex--;
-            //    }
-            //}
+            lenOut = output.Length;            
 
             return output;            
         }        
@@ -463,45 +446,7 @@ namespace SimPgmDataprom
             byte[] output = EncodeToBase64Bytes(input);
             for (int i = 0; i < output.Length; i++)
                 output[i] = (byte)(output[i] | (0x80)); 
-            lenOut = output.Length;
-
-
-            //int totalBits = input.Length * 8;
-            //lenOut = (totalBits % 7 != 0) ? (totalBits / 7) + 1 : (totalBits / 7);
-            //byte[] output = new byte[lenOut];
-
-            //int j = lenOut - 1;
-            //int shift = 1;
-            //byte msb = 0, lsb = 0;               
-
-
-            //for (int i = input.Length - 1; i >= 0; i--)
-            //{
-            //    msb = input[i];
-            //    msb >>= shift;
-            //    lsb = input[i];
-
-            //    lsb = ClearMSBNBits(lsb, 8 - shift);
-            //    lsb <<= (7 - shift);
-
-
-            //    output[j] |= 0x80;
-            //    output[j] |= msb;
-            //    j--;
-            //    output[j] |= 0x80;
-            //    output[j] |= lsb;
-
-            //    if ((shift + 1) % 8 != 0)
-            //    {
-            //        shift++;
-
-            //    }
-            //    else
-            //    {
-            //        shift = 1;
-            //        j--;
-            //    }
-            //}
+            lenOut = output.Length;            
 
             byte[] dadosEmpacotadoscomHeader = new byte[output.Length + 2];
 
@@ -510,16 +455,6 @@ namespace SimPgmDataprom
             dadosEmpacotadoscomHeader[dadosEmpacotadoscomHeader.Length - 1] = 0x03; // final
 
             return dadosEmpacotadoscomHeader;            
-        }
-
-        private static byte ClearLSBNBits(byte b, int n)
-        {
-            return (byte)(b & (~((1 << n) - 1)));
-        }
-
-        private static byte ClearMSBNBits(byte b, int n)
-        {
-            return (byte)(b & ((1 << (8 - n)) - 1));
-        }
+        }        
     }
 }
