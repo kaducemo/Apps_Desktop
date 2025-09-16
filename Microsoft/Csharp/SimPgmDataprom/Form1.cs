@@ -37,46 +37,16 @@ namespace SimPgmDataprom
 {
     public partial class Form1 : Form
     {
-       const int AES_KEY_LEN = 16; // Tamanho da CHAVE AES: 16 = AES128, 32 = AES256        
-
-        //const int GCM_TAG_LEN = 16; // Tamanho da TAG GCM        
-        //const int CONTADOR_LEN = 8; //Tamanho do contador
-
-
-
-        static AsymmetricCipherKeyPair parChavesProgramador;
-        static ECPublicKeyParameters chavePublicaControlador;
-        byte[] SegredoCompartilhado;
-        byte[] IKM = null;
-        byte[] desafioCriptografado = null;
-        byte[] aesKey = new byte[AES_KEY_LEN]; //Chave para AES
-        byte[] iv = new byte[12]; //Tabela IV
-        bool chavePublicaRemotaRecebida = false;
-        //byte[] salt = Encoding.ASCII.GetBytes("DATAPROM_SALT");
-        //byte[] salt = new byte[16] { (byte)'D', (byte)'A', (byte)'T', (byte)'A', (byte)'S', (byte)'A', (byte)'L', (byte)'T',
-        //                                    0,          0,          0,        0,         0,         0,         0,       0};
-
-        //byte[] info = new byte[16] { (byte)'D', (byte)'A', (byte)'T', (byte)'A', (byte)'I', (byte)'N', (byte)'F', (byte)'O',
-        //                                    0,          0,          0,        0,         0,         0,         0,       0};
-        const int GCM_TAG_LEN = 16; // Tamanho da TAG GCM        
-        const int CONTADOR_LEN = 8; //Tamanho do contador
-        const int MSG_BY_SESSION = 4; //Numero de mensagens por sessao
+        static AsymmetricCipherKeyPair parChavesProgramador = null;
+        static ECPublicKeyParameters chavePublicaControlador = null;
+        byte[] SegredoCompartilhado = null;
+        byte[] IKM = null;        
         UInt64 contadorMensagens = 0;
         
         public Form1()
         {
             InitializeComponent();
             InicializaServidorTCP();
-        }
-
-        private static byte ClearLSBNBits(byte b, int n)
-        {
-            return (byte)(b & (~((1 << n) - 1)));
-        }
-
-        private static byte ClearMSBNBits(byte b, int n)
-        {
-            return (byte)(b & ((1 << (8 - n)) - 1));
         }
 
         async void InicializaServidorTCP()
@@ -102,23 +72,18 @@ namespace SimPgmDataprom
             {
                 stream = cliente.GetStream();
                 while (true)
-                {
-                    //using (NetworkStream stream = cliente.GetStream())
-                    //{
+                {                    
                         byte[] buffer = new byte[1024];
                         int bytesLidos = await stream.ReadAsync(buffer, 0, buffer.Length);
-                        string mensagemRecebida = Encoding.UTF8.GetString(buffer, 0, bytesLidos);
-
-                        //Console.WriteLine($"Mensagem recebida: {mensagemRecebida}");
+                        string mensagemRecebida = Encoding.UTF8.GetString(buffer, 0, bytesLidos);                        
 
                         string resposta = "Mensagem recebida com sucesso!" + mensagemRecebida;
                         byte[] dadosResposta = Encoding.UTF8.GetBytes(resposta);
 
-                        BeginInvoke(new Action(() => { tbOutput.Text = mensagemRecebida; })); // Atualizar o TextBox na thread principal
-
+                        BeginInvoke(new Action(() => { tbIterRX.Text = mensagemRecebida; })); // Atualizar o TextBox na thread principal
 
                         await stream.WriteAsync(dadosResposta, 0, dadosResposta.Length);
-                    //}
+                    
                 }
             }
 
@@ -150,51 +115,100 @@ namespace SimPgmDataprom
 
         private void btConectar_Click(object sender, EventArgs e)
         {
-            if (maquinaEstados == ME.None || maquinaEstados == ME.Desconectado)
-            {
-                chavePublicaRemotaRecebida = false;
-                comboBox1.Enabled = false;
-                tsslStatus.Text = "Enviando PBK...";
+            if (btConectar.Text == "Conectar")
+            {     
+                //CONECTAR
+                if (comboBox1.SelectedIndex >= 0)
+                {
+                    try
+                    {
+                        serialPort1.PortName = comboBox1.SelectedItem.ToString();
+                        serialPort1.Open();
+                        btPubKey.Enabled = true;
+                        btDataHora.Enabled = true;
+                    }
+                    catch
+                    {
+                        MessageBox.Show("Erro Abrindo a porta escolhida!");
+                        return;
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("Escolha uma porta COM");
+                    return;
+                }
+
                 btConectar.Text = "Desconectar";
-                maquinaEstados = ME.Envia_PBK_Local;
-                serialPort1.PortName = comboBox1.SelectedItem.ToString();
-                serialPort1.Open();
+                comboBox1.Enabled = false; 
+                    
+                tsslStatus.Text = "TX QUADRO NÃO SEGURO[BD]: - Solicitou Informações do controlador pela porta " + comboBox1.SelectedItem.ToString();                
 
-                parChavesProgramador = GenerateKeyPair();
-                var alicePublicKey = parChavesProgramador.Public as ECPublicKeyParameters;
-                var alicePrivateKey = parChavesProgramador.Private as ECPrivateKeyParameters;
+                Byte[] enderecoBytes = DatapromFrame.VetorizaCodigoDoControlador(OpcodesDP.END_DUMMY); //63 eh um dummy do protocolo DP
+                DatapromFrame frame = DatapromFrame.ConstroiFrameQNS(enderecoBytes, OpcodesDP.ENVIA_IDENTIFICACAO_8D, null); //Constroi Quadro Nao Seguro
+                Byte[] frameVetorizado = DatapromFrame.VetorizaQuadro(frame);
+                serialPort1.Write(frameVetorizado, 0, frameVetorizado.Length);
 
-                //Envia chave publica local pela SERIAL
-                byte[] publicKeyBytes = alicePublicKey.Q.GetEncoded(false); // false para descompactada
-                byte[] privateKeyBytes = alicePrivateKey.D.ToByteArray(); // false para descompactada
+                BeginInvoke(new Action(() => {                    
 
-                int tam1 = 0;
-                byte[] dadosEmpacotados = EmpacotaDadosProtocolo(publicKeyBytes, out tam1);
+                    tbIterRX.Text = "";
+                    tbQtRX.Text = "";
+                    tbSessaoRX.Text = "";
+                    tbTagRX.Text = "";
+                    cbCriptoRX.Enabled = false;
 
-                serialPort1.Write(dadosEmpacotados, 0, dadosEmpacotados.Length);
-                maquinaEstados = ME.Recebe_PBK_Remota;                
+                    tbIterTX.Text = "-";
+                    tbQtTX.Text = "0";
+                    tbSessaoTX.Text = "-";
+                    tbTagTX.Text = "-";
+                    cbCriptoTX.Enabled = false;
 
-                BeginInvoke(new Action(() => { tbChaveLocalPriv.Text = BitConverter.ToString(privateKeyBytes).Replace("-", " "); })); // Atualizar o TextBox na thread principal
-                BeginInvoke(new Action(() => { tbChaveLocalPub.Text = BitConverter.ToString(publicKeyBytes).Replace("-", " "); })); // Atualizar o TextBox na thread principal
+                    
+                })); // Atualizar o TextBox na thread principal
 
             }
             else
             {
-                chavePublicaRemotaRecebida = false;
+                //DESCONECTAR
+                parChavesProgramador = null;
+                SegredoCompartilhado = null;
+                IKM = null;
+                contadorMensagens = 0;                
                 comboBox1.Enabled=true;
+                btPubKey.Enabled = false;
+                btDataHora.Enabled = false;
                 tsslStatus.Text = "Desconectado";
                 btConectar.Text = "Conectar";
+                DatapromFrame.aesKey = null;
+
                 BeginInvoke(new Action(() =>    {
-                                                    tbChaveLocalPriv.Text = "";
-                                                    tbChaveLocalPub.Text = "";
-                                                    tbOutput.Text = ""; 
-                                                    tbQt.Text = ""; 
-                                                    tbChaveRemPub.Text = ""; 
-                                                    tbSegredo.Text = "";
-                                                    tbDesafio.Text = "";
+                    tbChaveLocalPriv.Text = "";
+                    tbChaveLocalPub.Text = "";
+
+                    tbIterRX.Text = ""; 
+                    tbQtRX.Text = "";
+                    tbSessaoRX.Text = "";
+                    tbTagRX.Text = "";
+                    cbCriptoRX.Enabled = false;
+
+                    tbIterTX.Text = "";
+                    tbQtTX.Text = "";
+                    tbSessaoTX.Text = "";
+                    tbTagTX.Text = "";
+                    cbCriptoTX.Enabled = false;
+
+                    tbChaveRemPub.Text = ""; 
+                    tbSegredo.Text = "";
+                    tbIKM.Text = "";
+                    tbIterTX.Text = "";
+                    tbTabela.Text = "";
+                    tbProtocolo.Text = "";
+                    tbDescricao.Text = "";
+                    tbCodigo.Text = "";
+                    tbDescricao.Text = "";
+                    tbAESkey.Text = "";
                                                 })); // Atualizar o TextBox na thread principal
-                                                     
-                maquinaEstados = ME.Desconectado;
+                                                      
                 serialPort1.Close();
             }
         }
@@ -251,143 +265,307 @@ namespace SimPgmDataprom
         }
 
         private void ProcessFrame(byte[] dadosRecebidos)
-        /*Processa um frame recebido*/
         {
-            byte[] salt = new byte[16] { (byte)'D', (byte)'A', (byte)'T', (byte)'A', (byte)'S', (byte)'A', (byte)'L', (byte)'T',
-                                            0,          0,          0,        0,         0,         0,         0,       0};
+            DatapromFrame frame = DatapromFrame.ObtemFrameDoVetor(dadosRecebidos, IKM);
+            if (frame != null)
+            {
+                switch (frame.op)
+                {
+                    case OpcodesDP.MENSAGEM_INICIAL_GSM_80:
+                        {
+                            break;
+                        }
+                    case OpcodesDP.ENVIA_IDENTIFICACAO_8D:
+                        {
+                            string versaoSW = Encoding.ASCII.GetString(frame.dados, 0, 4);
+                            string codigoControlador = Encoding.ASCII.GetString(frame.dados, 4, 6);
+                            string descricao = Encoding.ASCII.GetString(frame.dados, 4 + 6, 128);
+                            Byte[] versaoTabela = new Byte[4];
+                            versaoTabela[0] = (byte)((frame.dados[frame.dados.Length - 4]) >> 4); //High
+                            versaoTabela[1] = (byte)((frame.dados[frame.dados.Length - 3]) & 0x0F); //Low
+                            string strVersaoTabela = $"{versaoTabela[0]}.{versaoTabela[1]}";
 
-            byte[] info = new byte[16] { (byte)'D', (byte)'A', (byte)'T', (byte)'A', (byte)'I', (byte)'N', (byte)'F', (byte)'O',
-                                            0,          0,          0,        0,         0,         0,         0,       0};
+                            Byte[] versaoProtocolo = new Byte[4];
+                            versaoProtocolo[0] = (byte)(frame.dados[frame.dados.Length - 2] >> 4);//High
+                            versaoProtocolo[1] = (byte)(frame.dados[frame.dados.Length - 1] & 0x0F);//Low
+                            string strVersaoProtocolo = $"{versaoProtocolo[0]}.{versaoProtocolo[1]}";
 
 
-            byte[] contadorMensagensBytes = null;
-            byte[] contadorSessoesBytes = null;
+                            BeginInvoke(new Action(() => { tbSw.Text = versaoSW; tbCodigo.Text = codigoControlador; tbDescricao.Text = descricao; tbTabela.Text = strVersaoTabela; tbProtocolo.Text = strVersaoProtocolo; })); // Atualizar o TextBox na thread principal                                                                
+                            tsslStatus.Text = "RX QUADRO NÃO SEGURO[BD]: - Recebidas Informações do Controlador";
 
-            if (maquinaEstados == ME.Recebe_PBK_Remota)
-            {                
-                    chavePublicaRemotaRecebida = true;                    
+                            BeginInvoke(new Action(() =>
+                            {
+                                tbQtRX.Text = frame.dados.Length.ToString();
+                                tbIterRX.Text = "-";
+                                tbSessaoRX.Text = "-";
+                                tbTagRX.Text = "-";
+                                cbCriptoRX.Checked = false;
+                            })); // Atualizar o TextBox na thread principal
 
-                    //Retira header
-                    byte[] dadosRecebidosSemHeader = new byte[dadosRecebidos.Length - 2];
-                    Array.Copy(dadosRecebidos, 1, dadosRecebidosSemHeader, 0, dadosRecebidosSemHeader.Length);
 
-                    int tamPacote = 0;
-                    var chavePublicaRem = DesempacotaDadosProtocolo(dadosRecebidosSemHeader, out tamPacote);
+                            if (cbAuto.Checked)
+                            {
+                                parChavesProgramador = GenerateKeyPair();
+                                var alicePublicKey = parChavesProgramador.Public as ECPublicKeyParameters;
+                                var alicePrivateKey = parChavesProgramador.Private as ECPrivateKeyParameters;
 
-                    var curve = ECNamedCurveTable.GetByName("secp256r1");
-                    var domainParams = new ECDomainParameters(curve.Curve, curve.G, curve.N, curve.H);
-                    var point = curve.Curve.DecodePoint(chavePublicaRem);
-                    chavePublicaControlador = new ECPublicKeyParameters(point, domainParams);
-                    SegredoCompartilhado = null;
-                    SegredoCompartilhado = GenerateSharedSecret(parChavesProgramador.Private as ECPrivateKeyParameters, chavePublicaControlador);
-                    IKM = new byte[65];
-                    PSKLib.Get_PSK_IKM(1, SegredoCompartilhado,out IKM);
+                                ////Envia chave publica local pela SERIAL
+                                byte[] publicKeyBytes = alicePublicKey.Q.GetEncoded(false); // false para descompactada
+                                byte[] privateKeyBytes = alicePrivateKey.D.ToByteArray(); // false para descompactada
 
-                    string hexString = BitConverter.ToString(chavePublicaRem).Replace("-", " "); // Converter para HEX                
-                    BeginInvoke(new Action(() => { tbOutput.Text = hexString; tbQt.Text = chavePublicaRem.Length.ToString(); tbChaveRemPub.Text = hexString; tbSegredo.Text = BitConverter.ToString(SegredoCompartilhado).Replace("-", " "); })); // Atualizar o TextBox na thread principal                
-                    maquinaEstados = ME.Recebe_Desafio;
-                    tsslStatus.Text = "Segredo ECDH criado";
+                                byte[] encodedPublicKeyBytes = Base64Code.EncodeToBase64Bytes(publicKeyBytes);
 
-            }
-            else if (maquinaEstados == ME.Recebe_Desafio) // Recebendo desafio criptografado
-            {               
-                byte[] dadosRecebidosSemHeader = new byte[dadosRecebidos.Length - 2];
-                Array.Copy(dadosRecebidos, 1, dadosRecebidosSemHeader, 0, dadosRecebidosSemHeader.Length);
-                
-                int tamPacote = 0;
-                byte[] desafioCriptografado = DesempacotaDadosProtocolo(dadosRecebidosSemHeader, out tamPacote);
-
-                contadorMensagens = BitConverter.ToUInt64(desafioCriptografado.Take(8).ToArray(), 0); // Atualiza contador com o índice atual da mensagem
-
-                contadorMensagensBytes = BitConverter.GetBytes(contadorMensagens); //Transforma contadorMensagens em bytes
-                contadorSessoesBytes = BitConverter.GetBytes(contadorMensagens/ MSG_BY_SESSION); //Transforma contadorMensagens em bytes
-
-                Buffer.BlockCopy(contadorMensagensBytes, 0, info, info.Length - CONTADOR_LEN, CONTADOR_LEN); // Copia o contador para o final do info
-                Buffer.BlockCopy(contadorSessoesBytes, 0, salt, salt.Length - CONTADOR_LEN, CONTADOR_LEN); // Copia o contador para o final do salt
-
-                string hexString = BitConverter.ToString(desafioCriptografado).Replace("-", " "); // Converte os dados recebidos p/HEX e salva para ser impresso em uma Textbox de RX
                                 
-                var hkdfKey = new HkdfBytesGenerator(new Sha256Digest()); //Cria um gerador HKDF para chave
-                hkdfKey.Init(new HkdfParameters(IKM, salt, info)); 
-                hkdfKey.GenerateBytes(aesKey, 0, aesKey.Length); // Gera chave AES128
 
-                var hkdfIV = new HkdfBytesGenerator(new Sha256Digest()); //Cria um novo gerador HKDF pra IV
-                hkdfIV.Init(new HkdfParameters(IKM, salt, info)); 
-                hkdfIV.GenerateBytes(iv, 0, iv.Length); // Gera IV
+                                DatapromFrame frame2 = DatapromFrame.ConstroiFrameQNS(DatapromFrame.VetorizaCodigoDoControlador(63), OpcodesDP.TROCA_CHAVES_PUBLICA_B6, encodedPublicKeyBytes); //Constroi Quadro Nao Seguro
+                                Byte[] frame2Bytes = DatapromFrame.VetorizaQuadro(frame2);
 
-                // Inicializa o AES-GCM
-                var gcm = new GcmBlockCipher(new AesEngine());
-                var aeadParams = new AeadParameters(new KeyParameter(aesKey), GCM_TAG_LEN * 8, iv);
-                gcm.Init(false, aeadParams); // false = modo decifrar
+                                serialPort1.Write(frame2Bytes, 0, frame2Bytes.Length); // Solicita chave Publica
 
-                byte[] entrada = desafioCriptografado.Skip(8).ToArray();                
-                byte[] resultado = new byte[gcm.GetOutputSize(entrada.Length)];
+                                BeginInvoke(new Action(() => 
+                                { 
+                                    tbChaveLocalPub.Text = BitConverter.ToString(publicKeyBytes).Replace("-", " ");
+                                    tbChaveLocalPriv.Text = BitConverter.ToString(privateKeyBytes).Replace("-", " ");
+                                    btPubKey.Enabled = false;
+                                    tsslStatus.Text = tsslStatus.Text + " e Solicitada chave Pública do controlador...";
 
-                try
-                {
-                    int len = gcm.ProcessBytes(entrada, 0, entrada.Length, resultado, 0);
-                    len += gcm.DoFinal(resultado, len);
+                                    tbQtRX.Text = frame2.dados.Length.ToString();
+                                    tbIterRX.Text = "";
+                                    tbSessaoRX.Text = "";
+                                    tbTagRX.Text = "";
+                                    cbCriptoRX.Checked = false;
 
-                    string desafioDecifrado = Encoding.UTF8.GetString(resultado, 0, len);
-                    BeginInvoke(new Action(() => { tbDesafio.Text = desafioDecifrado; })); // Atualizar o TextBox na thread principal 
+                                })); // Atualizar o TextBox na thread principal  
+                            }
+
+                            break;
+                        }
+                    case OpcodesDP.TROCA_DADOS_SEGUROS_B5:
+                        {
+                            contadorMensagens = frame.iterador >contadorMensagens? frame.iterador:contadorMensagens; 
+
+                            if (frame.dados[0] == OpcodesDP.SOLICITA_DATA_E_HORA_86)
+                            {
+                                tsslStatus.Text = "RX QUADRO SEGURO[B5-86]: - Recebeu Data e Hora!";
+                                BeginInvoke(new Action(() =>
+                                {
+                                    
+                                    
+                                        tbQtRX.Text = frame.dados.Length.ToString();
+                                        tbIterRX.Text = frame.iterador.ToString();
+                                        tbSessaoRX.Text = Convert.ToString(frame.iterador / DatapromFrame.MSG_BY_SESSION);
+                                        tbTagRX.Text = BitConverter.ToString(frame.tag).Replace("-", " ");
+                                        cbCriptoRX.Checked = true;
+                                        tbAESkey.Text = DatapromFrame.aesKey != null ? BitConverter.ToString(DatapromFrame.aesKey).Replace("-", " ") : "ERRO";
+                                }));
+
+                                if (cbRepete.Checked)
+                                {
+                                    Thread.Sleep(250);
+                                    Byte[] quadro = new Byte[1];
+                                    quadro[0] = OpcodesDP.SOLICITA_DATA_E_HORA_86; //Solicitação que será criptografada
+                                    DatapromFrame frame2 = DatapromFrame.ConstroiFrameQS(DatapromFrame.VetorizaCodigoDoControlador(OpcodesDP.END_DUMMY), quadro, ref contadorMensagens, IKM); //63 eh um dummy do protocolo DP
+                                    Byte[] frame2Bytes = DatapromFrame.VetorizaQuadro(frame2);
+                                    serialPort1.Write(frame2Bytes, 0, frame2Bytes.Length); // Solicita chave Publica
+                                    tsslStatus.Text = "TX QUADRO SEGURO[B5-86]: - Solicitou data e hora do controlador";
+                                    BeginInvoke(new Action(() =>
+                                    {
+                                        tbQtTX.Text = frame2.dados.Length.ToString();
+                                        tbIterTX.Text = frame2.iterador.ToString();
+                                        tbSessaoTX.Text = Convert.ToString(frame2.iterador / DatapromFrame.MSG_BY_SESSION);
+                                        tbTagTX.Text = BitConverter.ToString(frame2.tag).Replace("-", " ");
+                                        cbCriptoTX.Checked = true;
+                                    })); // Atualizar o TextBox na thread principal
+                                }                                    
+                                                                
+                            }
+                            break;
+                        }
+                    case OpcodesDP.TROCA_CHAVES_PUBLICA_B6:
+                        {
+                            //Antes de guardar chave publica remota é necessario decodificar do B64
+                            byte[] decodedRemotePublicKeyBytes = Base64Code.DecodeFromBase64Bytes(frame.dados);
+
+                            var curve = ECNamedCurveTable.GetByName("secp256r1");
+                            var domainParams = new ECDomainParameters(curve.Curve, curve.G, curve.N, curve.H);
+
+                            try
+                            {
+                                var point = curve.Curve.DecodePoint(decodedRemotePublicKeyBytes);
+                                chavePublicaControlador = new ECPublicKeyParameters(point, domainParams);
+
+                                SegredoCompartilhado = null;
+                                SegredoCompartilhado = GenerateSharedSecret(parChavesProgramador.Private as ECPrivateKeyParameters, chavePublicaControlador);
+                                IKM = new byte[65];
+                                PSKLib.Get_PSK_IKM(1, SegredoCompartilhado, out IKM);
+
+                                string hexString1 = BitConverter.ToString(decodedRemotePublicKeyBytes).Replace("-", " "); // Converter para HEX                
+
+                                BeginInvoke(new Action(() =>
+                                {
+                                    tbChaveRemPub.Text = hexString1;
+                                    tbSegredo.Text = BitConverter.ToString(SegredoCompartilhado).Replace("-", " ");
+                                    tbIKM.Text = BitConverter.ToString(IKM).Replace("-", " ");
+                                    tsslStatus.Text = "RX QUADRO NÃO SEGURO[B6]: - Recebeu Chave Pública";
+                                    btPubKey.Enabled = true;
+
+                                    tbQtRX.Text = frame.dados.Length.ToString();
+                                    tbIterRX.Text = "-";
+                                    tbSessaoRX.Text = "-";
+                                    tbTagRX.Text = "-";
+                                    cbCriptoRX.Checked = false;
+
+                                }));
+
+                                if (cbAuto.Checked)
+                                {
+                                    BeginInvoke(new Action(() =>
+                                    {
+                                        tbQtRX.Text = "";
+                                        tbIterRX.Text = "";
+                                        tbSessaoRX.Text = "";
+                                        tbTagRX.Text = "";
+                                        cbCriptoRX.Checked = false;
+                                    })); // Limpa TB recepção
+
+                                    if (IKM != null)
+                                    {
+                                        // IKM já cadastrada então envia pode enviar QS
+                                        Byte[] quadro = new Byte[1];
+                                        quadro[0] = OpcodesDP.SOLICITA_DATA_E_HORA_86; //Solicitação que será criptografada
+                                        DatapromFrame frame2 = DatapromFrame.ConstroiFrameQS(DatapromFrame.VetorizaCodigoDoControlador(OpcodesDP.END_DUMMY), quadro, ref contadorMensagens, IKM); //63 eh um dummy do protocolo DP
+                                        Byte[] frame2Bytes = DatapromFrame.VetorizaQuadro(frame2);
+                                        serialPort1.Write(frame2Bytes, 0, frame2Bytes.Length); // Solicita chave Publica
+                                        tsslStatus.Text = "TX QUADRO SEGURO[B5-86]: - Solicitou data e hora do controlador";
+                                        BeginInvoke(new Action(() =>
+                                        {
+                                            tbQtTX.Text = frame2.dados.Length.ToString();
+                                            tbIterTX.Text = frame2.iterador.ToString();
+                                            tbSessaoTX.Text = Convert.ToString(frame2.iterador / DatapromFrame.MSG_BY_SESSION);
+                                            tbTagTX.Text = BitConverter.ToString(frame2.tag).Replace("-", " ");
+                                            cbCriptoTX.Checked = true;
+                                        })); // Atualizar o TextBox na thread principal
+                                    }
+                                    else
+                                    {
+                                        //Sem IKM, envia QNS
+                                        Byte[] dados = null;
+                                        DatapromFrame frame2 = DatapromFrame.ConstroiFrameQNS(DatapromFrame.VetorizaCodigoDoControlador(OpcodesDP.END_DUMMY), OpcodesDP.SOLICITA_DATA_E_HORA_86, dados); //63 eh um dummy do protocolo DP
+                                        Byte[] frame2Bytes = DatapromFrame.VetorizaQuadro(frame2);
+                                        serialPort1.Write(frame2Bytes, 0, frame2Bytes.Length); // Solicita chave Publica
+                                        tsslStatus.Text = "TX QUADRO NÃO SEGURO[86]: - Solicitou data e hora do controlador";
+                                        BeginInvoke(new Action(() =>
+                                        {
+                                            tbQtTX.Text = "0";
+                                            tbIterTX.Text = "-";
+                                            tbSessaoTX.Text = "-";
+                                            tbTagTX.Text = "-";
+                                            cbCriptoTX.Checked = false;
+                                        })); // Atualizar o TextBox na thread principal
+                                    }
+                                }
+
+                                if (cbRepete.Checked)
+                                {
+                                    Thread.Sleep(250);
+                                    if (parChavesProgramador == null)
+                                    {
+                                        parChavesProgramador = GenerateKeyPair();
+                                    }
+
+
+                                    var alicePublicKey = parChavesProgramador.Public as ECPublicKeyParameters;
+                                    var alicePrivateKey = parChavesProgramador.Private as ECPrivateKeyParameters;
+
+                                    ////Envia chave publica local pela SERIAL
+                                    byte[] publicKeyBytes = alicePublicKey.Q.GetEncoded(false); // false para descompactada
+                                    byte[] privateKeyBytes = alicePrivateKey.D.ToByteArray(); // false para descompactada
+
+                                    byte[] encodedPublicKeyBytes = Base64Code.EncodeToBase64Bytes(publicKeyBytes);
+
+                                    BeginInvoke(new Action(() => { tbChaveLocalPriv.Text = BitConverter.ToString(privateKeyBytes).Replace("-", " "); })); // Atualizar o TextBox na thread principal
+                                    BeginInvoke(new Action(() => { tbChaveLocalPub.Text = BitConverter.ToString(publicKeyBytes).Replace("-", " "); })); // Atualizar o TextBox na thread principal
+                                    BeginInvoke(new Action(() => { tbSegredo.Text = ""; tbIKM.Text = ""; tbChaveRemPub.Text = ""; })); // Atualizar o TextBox na thread principal
+
+                                    DatapromFrame frame2 = DatapromFrame.ConstroiFrameQNS(DatapromFrame.VetorizaCodigoDoControlador(OpcodesDP.END_DUMMY), OpcodesDP.TROCA_CHAVES_PUBLICA_B6, encodedPublicKeyBytes); //Constroi Quadro Nao Seguro
+                                    Byte[] frame2Bytes = DatapromFrame.VetorizaQuadro(frame2);
+
+                                    serialPort1.Write(frame2Bytes, 0, frame2Bytes.Length); // Solicita chave Publica
+                                    tsslStatus.Text = "TX QUADRO NÃO SEGURO[B6]: - Solicitou Chave Pública do controlador";
+                                    btPubKey.Enabled = false;
+
+                                    BeginInvoke(new Action(() =>
+                                    {
+                                        tbQtTX.Text = frame2.dados.Length.ToString();
+                                        tbIterTX.Text = "";
+                                        tbSessaoTX.Text = "";
+                                        tbTagTX.Text = "";
+                                        cbCriptoTX.Checked = false;
+                                    })); // Atualizar o TextBox na thread principal
+                                }
+
+
+
+                            }
+                            catch
+                            {
+                                MessageBox.Show("Chave Pública Inválida!");
+                            }
+                            break;
+                        }
+                    case OpcodesDP.SOLICITA_DATA_E_HORA_86:
+                        {
+                            tsslStatus.Text = "RX QUADRO NÃO SEGURO[86]: - Recebeu Data e Hora!";
+
+                            BeginInvoke(new Action(() =>
+                            {
+                                tbQtRX.Text = frame.dados.Length.ToString();
+                                tbIterRX.Text = "-";
+                                tbSessaoRX.Text = "-";
+                                tbTagRX.Text = "-";
+                                cbCriptoRX.Checked = false;
+                            }));
+                            if(cbRepete.Checked)
+                            {
+                                Thread.Sleep(250);
+                                BeginInvoke(new Action(() =>
+                                {
+                                    tbQtRX.Text = "";
+                                    tbIterRX.Text = "";
+                                    tbSessaoRX.Text = "";
+                                    tbTagRX.Text = "";
+                                    cbCriptoRX.Checked = false;
+                                })); //Limpa RX
+
+                                //Sem IKM, envia QNS
+                                Byte[] dados = null;
+                                DatapromFrame frame2 = DatapromFrame.ConstroiFrameQNS(DatapromFrame.VetorizaCodigoDoControlador(OpcodesDP.END_DUMMY), OpcodesDP.SOLICITA_DATA_E_HORA_86, dados); //63 eh um dummy do protocolo DP
+                                Byte[] frame2Bytes = DatapromFrame.VetorizaQuadro(frame2);
+                                serialPort1.Write(frame2Bytes, 0, frame2Bytes.Length); // Solicita chave Publica
+                                tsslStatus.Text = "TX QUADRO NÃO SEGURO[86]: - Solicitou data e hora do controlador";
+                                BeginInvoke(new Action(() =>
+                                {
+                                    tbQtTX.Text = "0";
+                                    tbIterTX.Text = "-";
+                                    tbSessaoTX.Text = "-";
+                                    tbTagTX.Text = "-";
+                                    cbCriptoTX.Checked = false;
+                                })); // Atualizar o TextBox na thread principal
+
+                            }
+
+                            
+                            
+                            break;
+                        }
+                    default:
+                        {
+                            break;
+                        }
                 }
-                catch (InvalidCipherTextException)
-                {
-                    BeginInvoke(new Action(() => { tbDesafio.Text = "Desafio Inválido"; })); // Atualizar o TextBox na thread principal 
-                }                
-
-                BeginInvoke(new Action(() => { tbOutput.Text = hexString; tbQt.Text = desafioCriptografado.Length.ToString(); }));
-
-                maquinaEstados = ME.Envia_Solucao;                
-                
-                byte[] solucaoBytes = System.Text.Encoding.ASCII.GetBytes(tbDesafioLocal.Text); // Transforma a solução em Bytes
-                
-                //Criptografar dados
-                contadorMensagens += 1;
-
-                contadorMensagensBytes = BitConverter.GetBytes(contadorMensagens); //Transforma contadorMensagens em bytes
-                contadorSessoesBytes = BitConverter.GetBytes(contadorMensagens/ MSG_BY_SESSION); //Transforma contadorMensagens em bytes
-
-                if (BitConverter.IsLittleEndian == false) 
-                    Array.Reverse(contadorMensagensBytes); // garante little-endian se necessário
-                                                                                                 
-                Buffer.BlockCopy(contadorMensagensBytes, 0, info, info.Length - CONTADOR_LEN, contadorMensagensBytes.Length); //Atualiza o info para criar uma nova IV
-                Buffer.BlockCopy(contadorSessoesBytes, 0, salt, salt.Length - CONTADOR_LEN, contadorSessoesBytes.Length); //Atualiza o salt para criar uma nova IV
-
-                hkdfKey = new HkdfBytesGenerator(new Sha256Digest()); //Cria um gerador HKDF para chave
-                hkdfKey.Init(new HkdfParameters(IKM, salt, info));
-                hkdfKey.GenerateBytes(aesKey, 0, aesKey.Length); // Gera chave AES256
-
-                hkdfIV = new HkdfBytesGenerator(new Sha256Digest());
-                hkdfIV.Init(new HkdfParameters(IKM, salt, info));
-                hkdfIV.GenerateBytes(iv, 0, iv.Length); // Atualiza IV usando o novo INFO
-
-                // Criptografa com AES-GCM
-                var gcmEnc = new GcmBlockCipher(new AesEngine());
-                var aeadParamsEnc = new AeadParameters(new KeyParameter(aesKey), GCM_TAG_LEN * 8, iv); // 128 = TAG de 16 bytes
-                gcmEnc.Init(true, aeadParamsEnc); // true = encriptação
-
-                byte[] cifra = new byte[gcmEnc.GetOutputSize(solucaoBytes.Length)];
-                int lenEnc = gcmEnc.ProcessBytes(solucaoBytes, 0, solucaoBytes.Length, cifra, 0);
-                lenEnc += gcmEnc.DoFinal(cifra, lenEnc); // cifra contém dados + tag
-
-                // Monta quadro: [contador | cifra (dados) |  tag]
-                byte[] quadroPayload = new byte[contadorMensagensBytes.Length + lenEnc];
-                Buffer.BlockCopy(contadorMensagensBytes, 0, quadroPayload, 0, contadorMensagensBytes.Length);
-                Buffer.BlockCopy(cifra, 0, quadroPayload, contadorMensagensBytes.Length, lenEnc);
-
-                // Aplica protocolo de empacotamento
-                int tamQuadroTX = 0;
-                var quadroTX = EmpacotaDadosProtocolo(quadroPayload, out tamQuadroTX);
-                
-                // Envia pela serial
-                serialPort1.Write(quadroTX, 0, quadroTX.Length);
-
-                // Atualiza status
-                tsslStatus.Text = "Desafio Remoto Recebido. Solução Enviada...";
-            }            
-        }
-
+            }
+        } 
 
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -405,56 +583,103 @@ namespace SimPgmDataprom
             var q = publicKey.Q.Multiply(privateKey.D).Normalize();
             var encodedPoint = q.GetEncoded(false); // false → formato não compactado, inclui 0x04
             return encodedPoint;
-        }
+        }        
 
-
-        public static byte[] EncodeToBase64Bytes(byte[] input)
+        private void btDataHora_Click(object sender, EventArgs e)
         {
-            string base64 = Convert.ToBase64String(input);            
-            return System.Text.Encoding.ASCII.GetBytes(base64);
-        }
-
-        public static byte[] DecodeFromBase64Bytes(byte[] base64Bytes)
-        {
-            string base64 = System.Text.Encoding.ASCII.GetString(base64Bytes);
-            byte[] decoded = Convert.FromBase64String(base64);            
-            return decoded;
-        }
-
-
-        public static byte[] DesempacotaDadosProtocolo(byte[] input, out int lenOut)
-        {
-            if (input == null || input.Length == 0)
+            BeginInvoke(new Action(() =>
             {
-                lenOut = 0;
-                return null;
+                tbQtRX.Text = "";
+                tbIterRX.Text = "";
+                tbSessaoRX.Text = "";
+                tbTagRX.Text = "";
+                cbCriptoRX.Checked = false;
+            })); 
+
+            if (IKM != null) {
+                // IKM já cadastrada então envia pode enviar QS
+                Byte[] quadro = new Byte[1];
+                quadro[0] = OpcodesDP.SOLICITA_DATA_E_HORA_86; //Solicitação que será criptografada
+                DatapromFrame frame2 = DatapromFrame.ConstroiFrameQS(DatapromFrame.VetorizaCodigoDoControlador(OpcodesDP.END_DUMMY), quadro, ref contadorMensagens, IKM); //63 eh um dummy do protocolo DP
+                Byte[] frame2Bytes = DatapromFrame.VetorizaQuadro(frame2);
+                serialPort1.Write(frame2Bytes, 0, frame2Bytes.Length); // Solicita chave Publica
+                tsslStatus.Text = "TX QUADRO SEGURO[B5-86]: - Solicitou data e hora do controlador";
+                BeginInvoke(new Action(() =>
+                {
+                    tbQtTX.Text = frame2.dados.Length.ToString();
+                    tbIterTX.Text = frame2.iterador.ToString();
+                    tbSessaoTX.Text = Convert.ToString(frame2.iterador / DatapromFrame.MSG_BY_SESSION);
+                    tbTagTX.Text = BitConverter.ToString(frame2.tag).Replace("-", " ");
+                    tbAESkey.Text = DatapromFrame.aesKey != null ? BitConverter.ToString(DatapromFrame.aesKey).Replace("-", " "): "ERRO";
+                    cbCriptoTX.Checked = true;
+                })); // Atualizar o TextBox na thread principal
             }
+            else {
+                //Sem IKM, envia QNS
+                Byte[] dados = null;
+                DatapromFrame frame2 = DatapromFrame.ConstroiFrameQNS(DatapromFrame.VetorizaCodigoDoControlador(OpcodesDP.END_DUMMY), OpcodesDP.SOLICITA_DATA_E_HORA_86, dados); //63 eh um dummy do protocolo DP
+                Byte[] frame2Bytes = DatapromFrame.VetorizaQuadro(frame2);
+                serialPort1.Write(frame2Bytes, 0, frame2Bytes.Length); // Solicita chave Publica
+                tsslStatus.Text = "TX QUADRO NÃO SEGURO[86]: - Solicitou data e hora do controlador";
+                BeginInvoke(new Action(() => 
+                {
+                    tbQtTX.Text = "0";
+                    tbIterTX.Text = "-";                     
+                    tbSessaoTX.Text = "-"; 
+                    tbTagTX.Text = "-"; 
+                    cbCriptoTX.Checked = false;
+                })); // Atualizar o TextBox na thread principal
 
-            for (int i = 0; i < input.Length; i++) //retira o bit 1 de todos os dados
-                input[i] &= 0x7F;
+            }            
+        }
 
-            byte[] output = DecodeFromBase64Bytes(input);
-            lenOut = output.Length;            
-
-            return output;            
-        }        
-
-        public static byte[] EmpacotaDadosProtocolo(byte[] input, out int lenOut)
-            /* Empacota dados em BASE64 */
+        private void btPubKey_Click(object sender, EventArgs e)
         {
+            if(parChavesProgramador == null)
+            {
+                parChavesProgramador = GenerateKeyPair();
+            }
+            
+            
+            var alicePublicKey = parChavesProgramador.Public as ECPublicKeyParameters;
+            var alicePrivateKey = parChavesProgramador.Private as ECPrivateKeyParameters;
 
-            byte[] output = EncodeToBase64Bytes(input);
-            for (int i = 0; i < output.Length; i++)
-                output[i] = (byte)(output[i] | (0x80)); 
-            lenOut = output.Length;            
+            ////Envia chave publica local pela SERIAL
+            byte[] publicKeyBytes = alicePublicKey.Q.GetEncoded(false); // false para descompactada
+            byte[] privateKeyBytes = alicePrivateKey.D.ToByteArray(); // false para descompactada
 
-            byte[] dadosEmpacotadoscomHeader = new byte[output.Length + 2];
+            byte[] encodedPublicKeyBytes = Base64Code.EncodeToBase64Bytes(publicKeyBytes);
 
-            dadosEmpacotadoscomHeader[0] = 0x02; // início
-            Array.Copy(output, 0, dadosEmpacotadoscomHeader, 1, output.Length);
-            dadosEmpacotadoscomHeader[dadosEmpacotadoscomHeader.Length - 1] = 0x03; // final
+            BeginInvoke(new Action(() => { tbChaveLocalPriv.Text = BitConverter.ToString(privateKeyBytes).Replace("-", " "); })); // Atualizar o TextBox na thread principal
+            BeginInvoke(new Action(() => { tbChaveLocalPub.Text = BitConverter.ToString(publicKeyBytes).Replace("-", " "); })); // Atualizar o TextBox na thread principal
+            BeginInvoke(new Action(() => { tbSegredo.Text = ""; tbIKM.Text = ""; tbChaveRemPub.Text = ""; })); // Atualizar o TextBox na thread principal
 
-            return dadosEmpacotadoscomHeader;            
-        }        
+            DatapromFrame frame2 = DatapromFrame.ConstroiFrameQNS(DatapromFrame.VetorizaCodigoDoControlador(OpcodesDP.END_DUMMY), OpcodesDP.TROCA_CHAVES_PUBLICA_B6, encodedPublicKeyBytes); //Constroi Quadro Nao Seguro
+            Byte[] frame2Bytes = DatapromFrame.VetorizaQuadro(frame2);
+
+            serialPort1.Write(frame2Bytes, 0, frame2Bytes.Length); // Solicita chave Publica
+            tsslStatus.Text = "TX QUADRO NÃO SEGURO[B6]: - Solicitou Chave Pública do controlador";
+            btPubKey.Enabled = false;
+
+            BeginInvoke(new Action(() =>
+            {
+                tbQtTX.Text = frame2.dados.Length.ToString();
+                tbIterTX.Text = "-";
+                tbSessaoTX.Text = "-";
+                tbTagTX.Text = "-";
+                cbCriptoTX.Checked = false;
+            })); // Atualizar o TextBox na thread principal
+
+        }
+
+        private void cbAuto_CheckedChanged(object sender, EventArgs e)
+        {
+            
+            cbRepete.Enabled = !cbAuto.Checked;
+            if (cbAuto.Checked)
+            {
+                cbRepete.Checked = false;
+            }
+        }
     }
 }
