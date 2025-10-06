@@ -33,12 +33,12 @@ namespace SimPgmDataprom
         private const int LEN_MINIMAL_QNS = 7; //Tamanho do quadro nao seguro minimo (sem dados)
         private const int LEN_MINIMAL_QS = 44; //Tamanho do quadro SEGURO minimo (sem dados)
 
-        private static byte[] salt = new byte[10] { (byte)'D', (byte)'A', (byte)'T', (byte)'A', (byte)'S', (byte)'A', (byte)'L', (byte)'T', 0, 0};
+        private static byte[] salt = new byte[11] { (byte)'D', (byte)'A', (byte)'T', (byte)'A', (byte)'S', (byte)'A', (byte)'L', (byte)'T', 0, 0, 0};
 
         private static byte[] info = new byte[16] { (byte)'D', (byte)'A', (byte)'T', (byte)'A', (byte)'I', (byte)'N', (byte)'F', (byte)'O',
                                             0,          0,          0,        0,         0,         0,         0,       0};
 
-        public static byte[] aesKey = null;
+        //public static byte[] aesKey = null;
 
 
         public Byte[] endereco = new Byte[ADD_LEN]; // Endereco Controlador (AREA/CONTROLADOR/SUBCONTROLADOR)
@@ -84,7 +84,7 @@ namespace SimPgmDataprom
             }
         }
 
-        Byte ObtemCodigoControladorDoVetor(Byte[] input)
+        public static Byte ObtemCodigoControladorDoVetor(Byte[] input)
         {
             Byte codigo = 0;
             codigo |= (Byte)((input[1] << 4) & 0x30);
@@ -92,16 +92,45 @@ namespace SimPgmDataprom
             return codigo;            
         }
 
-        static public Byte[] VetorizaCodigoDoControlador(Byte cod)
+        public static Byte ObtemAreaControladorDoVetor(Byte[] input)
+        {
+            Byte area = 0;
+            area |= (Byte)((input[0] >> 1) & 0x3F);
+            return area;
+        }
+
+        public static Byte ObtemRedeControladorDoVetor(Byte[] input)
+        {
+            Byte rede = 0;
+            rede |= (Byte)((input[0] << 5) & 0x20);
+            rede |= (Byte)((input[1] >> 2) & 0x1F);
+            return rede;
+        }
+
+        static public Byte[] VetorizaIdDoControlador(Byte cod, Byte rede, Byte area)
         {
             Byte[] output = new Byte[3];
+
+            //Codigo
             output[0] = 0;
             output[1] = (Byte)((cod >> 4) & 0x03);
-            output[2] = (Byte)((cod << 3) & 0x78);            
+            output[2] = (Byte)((cod << 3) & 0x78);
+
+            //Rede
+            output[0] |= (Byte)((rede >> 5) & 0x01);
+            output[1] |= (Byte)((rede << 2) & 0x7C);
+
+            //Area
+            output[0] |= (Byte)((area << 1) & 0x7E);
+
+            output[0] |= 0x80;
+            output[1] |= 0x80;
+            output[2] |= 0x80;
+
             return output;
         }
 
-        static public DatapromFrame ObtemFrameDoVetor(Byte[] vet, Byte[] ikm)
+        static public DatapromFrame ObtemFrameDoVetor(Byte[] vet, Byte[] ikm, ref Byte[] aesKey, int salt_id)
         {
             DatapromFrame ret = null;
             
@@ -157,19 +186,31 @@ namespace SimPgmDataprom
 
                         Byte[] infoIV = new Byte[info.Length];
                         Byte[] infoKey = new Byte[info.Length];
+                        Byte[] saltWithId = new Byte[salt.Length];
 
                         Buffer.BlockCopy(info, 0, infoIV, 0, info.Length); // LABEL INFO PARA IVS
                         Buffer.BlockCopy(info, 0, infoKey, 0, info.Length); // LABEL INFO PARA KEY
+                        Buffer.BlockCopy(salt, 0, saltWithId, 0, salt.Length); // LABEL SALT
+
+                        if(salt_id == 1)
+                        {
+                            Byte[] auxSaltId = new byte[3];                            
+                            auxSaltId[0] = ObtemAreaControladorDoVetor(vet.Skip(1).Take(3).ToArray());
+                            auxSaltId[1] = ObtemRedeControladorDoVetor(vet.Skip(1).Take(3).ToArray());
+                            auxSaltId[2] = ObtemCodigoControladorDoVetor(vet.Skip(1).Take(3).ToArray());
+                            Buffer.BlockCopy(auxSaltId, 0, saltWithId, 8, auxSaltId.Length);
+                        }
+
 
                         Buffer.BlockCopy(iteradorBytes, 0, infoIV, infoIV.Length - CONTADOR_LEN, CONTADOR_LEN); // Copia o contador para o final do infoIV
                         Buffer.BlockCopy(sessaoBytes, 0, infoKey, infoKey.Length - CONTADOR_LEN, CONTADOR_LEN); // Copia o contador para o final do infoKEY
 
                         var hkdfKey = new HkdfBytesGenerator(new Sha256Digest()); //Cria um gerador HKDF para chave
-                        hkdfKey.Init(new HkdfParameters(ikm, salt, infoKey));
+                        hkdfKey.Init(new HkdfParameters(ikm, saltWithId, infoKey));
                         hkdfKey.GenerateBytes(aesKey, 0, aesKey.Length); // Gera chave AES128
 
                         var hkdfIV = new HkdfBytesGenerator(new Sha256Digest()); //Cria um novo gerador HKDF pra IV
-                        hkdfIV.Init(new HkdfParameters(ikm, salt, infoIV));
+                        hkdfIV.Init(new HkdfParameters(ikm, saltWithId, infoIV));
                         hkdfIV.GenerateBytes(iv, 0, iv.Length); // Gera IV
 
                         // Inicializa o AES-GCM
@@ -235,7 +276,7 @@ namespace SimPgmDataprom
             return ret;
         }
 
-        static public DatapromFrame ConstroiFrameQS(Byte[] end, Byte[] dados, ref UInt64 iterador, Byte[] ikm)
+        static public DatapromFrame ConstroiFrameQS(Byte[] end, Byte[] dados, ref UInt64 iterador, Byte[] ikm, ref Byte[] aeskey, int salt_id)
         { // Constroi Quadro Seguro
 
             DatapromFrame ret = null;
@@ -257,27 +298,38 @@ namespace SimPgmDataprom
 
                 Byte[] infoIV = new Byte[info.Length];
                 Byte[] infoKey = new Byte[info.Length];
+                Byte[] saltWithId = new Byte[salt.Length];
 
                 Buffer.BlockCopy(info, 0, infoIV, 0, info.Length); // LABEL INFO PARA IVS
                 Buffer.BlockCopy(info, 0, infoKey, 0, info.Length); // LABEL INFO PARA KEY
+                Buffer.BlockCopy(salt, 0, saltWithId, 0, salt.Length); // LABEL PARA SALT 
 
                 Buffer.BlockCopy(contadorMensagensBytes, 0, infoIV, infoIV.Length - CONTADOR_LEN, CONTADOR_LEN); // INFO PARA IVS
                 Buffer.BlockCopy(contadorSessoesBytes, 0, infoKey, infoKey.Length - CONTADOR_LEN, CONTADOR_LEN); // INFO PARA KEYS
 
-                aesKey = new byte[AES_KEY_LEN]; //Chave para AES
+                if (salt_id == 1)
+                {
+                    Byte[] auxSaltId = new byte[3];
+                    auxSaltId[0] = ObtemAreaControladorDoVetor(end);
+                    auxSaltId[1] = ObtemRedeControladorDoVetor(end);
+                    auxSaltId[2] = ObtemCodigoControladorDoVetor(end);
+                    Buffer.BlockCopy(auxSaltId, 0, saltWithId, 8, auxSaltId.Length);
+                }
+
+                aeskey = new byte[AES_KEY_LEN]; //Chave para AES
                 byte[] iv = new byte[12]; //Tabela IV                
 
                 var hkdfKey = new HkdfBytesGenerator(new Sha256Digest()); //Cria um gerador HKDF para chave
-                hkdfKey.Init(new HkdfParameters(ikm, salt, infoKey));
-                hkdfKey.GenerateBytes(aesKey, 0, aesKey.Length); // Gera chave AES128
+                hkdfKey.Init(new HkdfParameters(ikm, saltWithId, infoKey));
+                hkdfKey.GenerateBytes(aeskey, 0, aeskey.Length); // Gera chave AES128
 
                 var hkdfIV = new HkdfBytesGenerator(new Sha256Digest()); //Cria um novo gerador HKDF pra IV
-                hkdfIV.Init(new HkdfParameters(ikm, salt, infoIV));
+                hkdfIV.Init(new HkdfParameters(ikm, saltWithId, infoIV));
                 hkdfIV.GenerateBytes(iv, 0, iv.Length); // Gera IV
 
                 // Inicializa o AES-GCM
                 var gcm = new GcmBlockCipher(new AesEngine());
-                var aeadParams = new AeadParameters(new KeyParameter(aesKey), GCM_TAG_LEN * 8, iv);
+                var aeadParams = new AeadParameters(new KeyParameter(aeskey), GCM_TAG_LEN * 8, iv);
                 gcm.Init(true, aeadParams); // // true = encriptação
 
                 byte[] cifra = new byte[gcm.GetOutputSize(dados.Length)];

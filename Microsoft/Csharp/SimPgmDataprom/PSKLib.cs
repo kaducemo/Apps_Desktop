@@ -9,8 +9,9 @@ namespace SimPgmDataprom
     public class PSKLib
     {
 
-        private const int CTRL_MIN_ADD = 1;
-        private const int CTRL_MAX_ADD = 63;
+        private const int CTRL_MIN_ADD = 0;
+        private const int CTRL_MAX_ADD = 255;
+        private const int CTRL_DUMMY_ADD = 63;
         private const int PSK_QTY = 10;
         private const int PSK_LENGTH = 65;
         private const byte BIT_INV_MASK = 0xAA;
@@ -39,17 +40,31 @@ namespace SimPgmDataprom
         {
             ikm = new byte[PSK_LENGTH];
 
-            if (index >= CTRL_MIN_ADD && index <= CTRL_MAX_ADD && sec[0] == 0x04)
+            if(sec[0] == 0x04)
             {
-                int unidade = index % 10;
-
-                for (int i = 0; i < PSK_LENGTH; i++)
+                if (index >= CTRL_MIN_ADD && index <= CTRL_MAX_ADD && index != CTRL_DUMMY_ADD)
                 {
-                    ikm[i] = (byte)(psk[unidade, i] ^ (sec[i] ^ BIT_INV_MASK));
-                }
+                    int unidade = index % 10;
 
-                return true;
-            }
+                    for (int i = 0; i < PSK_LENGTH; i++)
+                    {
+                        ikm[i] = (byte)(psk[unidade, i] ^ (sec[i] ^ BIT_INV_MASK));
+                    }
+
+                    return true;
+                }
+                else if (index == CTRL_DUMMY_ADD)
+                {
+                    for (int i = 0; i < PSK_LENGTH; i++)
+                    {
+                        ikm[i] = (byte)(psk[0, i] ^ (sec[i] ^ BIT_INV_MASK));
+                    }
+                }
+                else
+                {
+                    return false;
+                }
+            }            
 
             return false;
         }
