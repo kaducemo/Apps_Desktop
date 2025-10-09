@@ -277,25 +277,12 @@ namespace SimPgmDataprom
                                 tbProtocoloAnt.Text = Encoding.ASCII.GetString(frame.dados, 11, 4);
                             })); // Atualizar o TextBox na thread principal
 
-                            Byte[] dados = { };
-                            DatapromFrame frame2 = DatapromFrame.ConstroiFrameQNS(frame.endereco, OpcodesDP.MENSAGEM_INICIAL_GSM_80, dados); //63 eh um dummy do protocolo DP
-                            Byte[] frame2Bytes = DatapromFrame.VetorizaQuadro(frame2);
-                            
-                            if(iface == 0) //Responde via porta serial
-                                serialPort1.Write(frame2Bytes, 0, frame2Bytes.Length); 
-                            else //Responde via ethernet
-                            {
-                                if(stream != null)
+                                if (stream != null)
                                 {
-                                    stream.WriteAsync(frame2Bytes, 0, frame2Bytes.Length);
-                                    BeginInvoke(new Action(() => { tbPacotesTX.Text += "TCP: " + BitConverter.ToString(frame2Bytes).Replace("-", " ") + Environment.NewLine; })); // Atualizar o TextBox na thread principal
-
-
-
                                     if (cbAutoAnt.Checked)
-                                    {
+                                    {   
                                         Thread.Sleep(3000); //Espera um pouco para não encavalar os comandos
-
+                                        DatapromFrame frame2 = null;
                                         parChavesAntares = GenerateKeyPair();
                                         var alicePublicKey = parChavesAntares.Public as ECPublicKeyParameters;
                                         var alicePrivateKey = parChavesAntares.Private as ECPrivateKeyParameters;
@@ -305,26 +292,28 @@ namespace SimPgmDataprom
                                         byte[] privateKeyBytes = alicePrivateKey.D.ToByteArray(); // false para descompactada
 
                                         byte[] encodedPublicKeyBytes = Base64Code.EncodeToBase64Bytes(publicKeyBytes);
-                                                                                                                       
 
-                                        if (iface == 0) {
-                                            //Serial
-                                            frame2 = DatapromFrame.ConstroiFrameQNS(DatapromFrame.VetorizaIdDoControlador(OpcodesDP.END_DUMMY,0,0), OpcodesDP.TROCA_CHAVES_PUBLICA_B6, encodedPublicKeyBytes); //Constroi Quadro Nao Seguro
-                                            frame2Bytes = DatapromFrame.VetorizaQuadro(frame2);
+
+                                        if (iface == 0)
+                                        {
+                                        //Serial
+                                            frame2 = DatapromFrame.ConstroiFrameQNS(frame.endereco, OpcodesDP.TROCA_CHAVES_PUBLICA_B6, encodedPublicKeyBytes); //Constroi Quadro Nao Seguro
+                                            Byte[] frame2Bytes = DatapromFrame.VetorizaQuadro(frame2);
                                             BeginInvoke(new Action(() => { tbPacotesTX.Text += "Serial: " + BitConverter.ToString(frame2Bytes).Replace("-", " ") + Environment.NewLine; })); // Atualizar o TextBox na thread principal
                                             serialPort1.Write(frame2Bytes, 0, frame2Bytes.Length); // Solicita chave Publica
                                         }
-                                            
-                                        else  {
+
+                                        else
+                                        {
                                             //ETH
                                             if (stream != null)
                                             {
-                                                frame2 = DatapromFrame.ConstroiFrameQNS(DatapromFrame.VetorizaIdDoControlador(Convert.ToByte(tbCodigoAnt.Text), Convert.ToByte(tbRedeAnt.Text), Convert.ToByte(tbAreaAnt.Text)), OpcodesDP.TROCA_CHAVES_PUBLICA_B6, encodedPublicKeyBytes); //Constroi Quadro Nao Seguro
-                                                frame2Bytes = DatapromFrame.VetorizaQuadro(frame2);
+                                                frame2 = DatapromFrame.ConstroiFrameQNS(frame.endereco, OpcodesDP.TROCA_CHAVES_PUBLICA_B6, encodedPublicKeyBytes); //Constroi Quadro Nao Seguro
+                                                Byte[] frame2Bytes = DatapromFrame.VetorizaQuadro(frame2);
                                                 stream.WriteAsync(frame2Bytes, 0, frame2Bytes.Length);
                                                 BeginInvoke(new Action(() => { tbPacotesTX.Text += "TCP: " + BitConverter.ToString(frame2Bytes).Replace("-", " ") + Environment.NewLine; })); // Atualizar o TextBox na thread principal
                                             }
-                                                
+
                                         }
 
                                         BeginInvoke(new Action(() =>
@@ -344,10 +333,10 @@ namespace SimPgmDataprom
                                         })); // Atualizar o TextBox na thread principal  
                                     }
                                 }
-                            }
+                            //}
                             btPubKeyAnt.Enabled = true;
                             btDataHoraAnt.Enabled = true;
-                            tsslStatus.Text = "TX QUADRO NÃO SEGURO[80]: - Respondeu Mensagem Inicial";
+                            tsslStatus.Text = "TX QUADRO NÃO SEGURO[80]: - Recebeu Mensagem Inicial";
                             break;
                         }
                     case OpcodesDP.ENVIA_IDENTIFICACAO_8D:
@@ -527,8 +516,6 @@ namespace SimPgmDataprom
                                     Byte[] quadro = new Byte[1];
                                     quadro[0] = OpcodesDP.SOLICITA_DATA_E_HORA_86; //Solicitação que será criptografada
                                     DatapromFrame frame2 = null;
-                                    //DatapromFrame frame2 = DatapromFrame.ConstroiFrameQS(DatapromFrame.VetorizaIdDoControlador(OpcodesDP.END_DUMMY), quadro, ref contadorMensagens, IKM); //63 eh um dummy do protocolo DP
-                                    //Byte[] frame2Bytes = DatapromFrame.VetorizaQuadro(frame2);
 
                                     if (iface == 0) //Serial
                                     {
@@ -571,8 +558,7 @@ namespace SimPgmDataprom
                                             tbTagTXAnt.Text = BitConverter.ToString(frame2.tag).Replace("-", " ");
                                             cbCriptoTXAnt.Checked = true;
                                         })); // Atualizar o TextBox na thread principal
-                                    }
-                                    
+                                    }                                    
                                 }                                                                              
                             }
                             break;

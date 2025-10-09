@@ -247,8 +247,12 @@ namespace SimPgmDataprom
             return ret;
         }
 
-        static public DatapromFrame ConstroiFrameQNS(Byte[] end, Byte op, Byte[] dados) //Constroi Quadro Nao Seguro
-        {
+        static public DatapromFrame ConstroiFrameQNS(Byte[] end, Byte op, Byte[] dados) {
+            /* Constroi Quadro Nao Seguro
+             * end = 3bytes de endereco do quadro padrao da Dataprom
+             * op = Opcode
+             * dados = dados relacionados ao quadro que se deseja transmitir
+             */
             DatapromFrame ret = null;
             if (end != null && (op >= OpcodesDP.MENSAGEM_INICIAL_GSM_80 && op <= OpcodesDP.TROCA_CHAVES_PUBLICA_B6) && op != OpcodesDP.TROCA_DADOS_SEGUROS_B5)
             // Verifica se endereco e opcode sao validos
